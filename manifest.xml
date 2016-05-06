@@ -1,0 +1,20 @@
+<package>
+  <description brief="Assertive_Behaviour">
+
+     Assertive_Behaviour
+
+  </description>
+  <author>autolab</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/Assertive_Behaviour</url>
+  
+  <depend package="roscpp"/>
+  <depend package="geometry_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="std_msgs"/>
+  <!--<depend package="vector"/>-->
+
+</package>
+
+
