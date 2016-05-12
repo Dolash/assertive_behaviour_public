@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #include <tf/transform_datatypes.h>
+=======
+//#include <tf/transform_datatypes.h>
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 #include "assertive_behaviour/assertive_behaviour.h"
 
 /*Jacob's function for extracting the yaw from the Quaternion you get from Vicon. Thanks, Jacob!*/
@@ -29,12 +33,16 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         panicking = false;
         fighting = false;
         navigating = true;
+<<<<<<< HEAD
         //laserReceived = false;
         legReceived = false;
         legWarning = false;
         poseReceived = false;
         returnTrip = false;
         driving = false;
+=======
+        laserReceived = false;
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 	    //backupTime = ros::Time::now();
 	    //debugTime = ros::Time::now();
 
@@ -84,20 +92,29 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
 	recharging = false;
 	chargeState = 0;*/
 
+<<<<<<< HEAD
     /*Subscriber for the laser*/
   	//laserSub = nh.subscribe("scan", 1, &AssertiveBehaviour::laserCallback, this);
   	/*Subscriber for the laser-based leg detector*/
   	legSub = nh.subscribe("/legs", 1, &AssertiveBehaviour::legCallback, this);
   	poseSub = nh.subscribe("/global_poses", 1, &AssertiveBehaviour::viconCallback, this);
   	
+=======
+  /*The subscriptions, one for the robot's own pose, one for the battery's current charge level*/
+  	laserSub = nh.subscribe("scan", 1, &AssertiveBehaviour::laserCallback, this);
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 	/*chargeLevelSub = nh.subscribe("battery/charge_ratio", 1, &assertiveBehaviour::chargeLevelCallback, this);
 	buoySub = nh.subscribe("ir_omni", 1, &assertiveBehaviour::buoyCallback, this);*/
   /* The publishers, one to cmd_vel to send movement commands,
    * one to the dock topic when it's time to dock,
    * and one to the undock topic when it's time to undock.
    */
+<<<<<<< HEAD
 	cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 30);
 	gripper_pub = nh.advertise<p2os_driver::GripperState>("/gripper_control", 30);
+=======
+	cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 30);
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 	/*
 	dock_pub = nh.advertise<std_msgs::Empty>("dock", 30);
 	undock_pub = nh.advertise<std_msgs::Empty>("undock", 30);
@@ -110,6 +127,7 @@ AssertiveBehaviour::~AssertiveBehaviour() {
 }
 
 /*For the laser subscriber, extracting the data from the message.*/
+<<<<<<< HEAD
 /*void AssertiveBehaviour::laserCallback(const sensor_msgs::LaserScan scanData) {
     latestLaserScan = scanData.ranges;
     laserReceived = true;
@@ -127,6 +145,15 @@ void AssertiveBehaviour::viconCallback(const geometry_msgs::PoseArray poseData) 
 }
 
 
+=======
+void AssertiveBehaviour::laserCallback(const sensor_msgs::LaserScan scanData) {
+    latestLaserScan = scanData.ranges;
+    laserReceived = true;
+  	//ownPose = *pose;
+  	//poseReceived = true;
+}
+
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 /*For the charge level subscriber, extracting that charge level from the message.*/
 /*void AssertiveBehaviour::chargeLevelCallback(const std_msgs::Float32 charge) {
 	chargeLatest = charge.data;
@@ -140,6 +167,7 @@ void AssertiveBehaviour::buoyCallback(const std_msgs::UInt16 irReading) {
 
 
 /*For calculating the angle we want to be turned in order to be facing our target (in this case, the charger)*/
+<<<<<<< HEAD
 float AssertiveBehaviour::getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn)
 {
 	float result = 0;
@@ -156,10 +184,29 @@ float AssertiveBehaviour::getDesiredAngle(float targetX, float targetY, float cu
 	result = (result - 1.57595);
 	/*A quick fix in the event that this desired angle adjustment takes us "off the edge" of pi*/
 	if (result < -3.1518)
+=======
+/*float AssertiveBehaviour::getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn)
+{
+	float result = 0;*/
+
+	//I'm making this adjustment because I am turning the robot's current position into the origin, so the origin x and y are really currentPositionX/Y - currentPositionX/Y.
+	//I'm doing this for my brain's sake.
+	/*float nTargetX = (targetX - currentXCoordinateIn);
+	float nTargetY = (targetY - currentYCoordinateIn);*/
+
+
+	/*So this calculates, if our robot was at the origin and our target is at the appropriate relative position, what angle should we be turned to face them?*/
+	/*float angbc = atan2((nTargetY), (nTargetX));
+	result = angbc;
+	result = (result - 1.57595);*/
+	/*A quick fix in the event that this desired angle adjustment takes us "off the edge" of pi*/
+	/*if (result < -3.1518)
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 	{
 		result = (3.1518 - (fabs(result) - 3.1518));
 	}
 	return result;
+<<<<<<< HEAD
 }
 
 
@@ -184,15 +231,43 @@ void AssertiveBehaviour::waypointing()
 
 	/*Now we calculate the yaw we'd want from our current position to be driving toward the assertive station.*/
 		desiredAngle = getDesiredAngle(desiredX, desiredY, latestPoses.poses[0].position.x, latestPoses.poses[0].position.y);
+=======
+}*/
+
+
+/*When going to assertive, call this to determine what speed forward/what turn angle you need in order to drive back and forth between the edges of the "charging area"*/
+/*void AssertiveBehaviour::approachCharger()
+{
+	float desiredAngle = 0;
+	float turnRate = 0.0;
+	float velocity = 0.0;*/
+	/*Since the vicon bridge is giving us quaternions, we'll want to get our own yaw back out of it.*/
+	//yaw = getYaw(ownPose.transform.rotation);
+	/*Now we calculate the yaw we'd want from our current position to be driving toward the assertive station.*/
+	/*if (chargerPatrolReset == false)
+	{
+		desiredAngle = getDesiredAngle(chargerX, chargerY1, ownPose.transform.translation.x, ownPose.transform.translation.y);
+	}
+	else
+	{
+		desiredAngle = getDesiredAngle(chargerX, chargerY2, ownPose.transform.translation.x, ownPose.transform.translation.y);
+	}*/
+	
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 
 
 
 		/*If we're moving and our current yaw is within 0.25 of what we want, keep driving*/
+<<<<<<< HEAD
 		if ((yaw > (desiredAngle - 0.25)) && (yaw < (desiredAngle + 0.25)) && (driving == true))
+=======
+		/*if ((yaw > (desiredAngle - 0.25)) && (yaw < (desiredAngle + 0.25)) && (driving == true))
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 
 		{
 			move_cmd.linear.x = 0.2;
 			move_cmd.angular.z = 0.0;
+<<<<<<< HEAD
 		}
 		/*However, if we're near the "seam" where ~3.1415 becomes ~-3.1415, we need to be fiddly if our desired angle is on the other side*/
 		else if ((((yaw > 2.9) && (desiredAngle < -2.9)) || ((yaw < -2.9) && (desiredAngle > 2.9))) && (driving == true))
@@ -202,30 +277,61 @@ void AssertiveBehaviour::waypointing()
 		}
 		/*Now, if we're currently turning and have successfully turned to within 0.15 of what we want, start driving again.*/
 		else if ((yaw > (desiredAngle - 0.15)) && (yaw < (yaw + 0.15)) && (driving == false))
+=======
+		}*/
+		/*However, if we're near the "seam" where ~3.1415 becomes ~-3.1415, we need to be fiddly if our desired angle is on the other side*/
+		/*else if ((((yaw > 2.9) && (desiredAngle < -2.9)) || ((yaw < -2.9) && (desiredAngle > 2.9))) && (driving == true))
+		{
+			move_cmd.linear.x = 0.2;
+			move_cmd.angular.z = 0.0;
+		}*/
+		/*Now, if we're currently turning and have successfully turned to within 0.15 of what we want, start driving again.*/
+		/*else if ((yaw > (desiredAngle - 0.15)) && (yaw < (yaw + 0.15)) && (driving == false))
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 
 		{
 			move_cmd.linear.x = 0.2;
 			move_cmd.angular.z = 0.0;
 			driving = true;
+<<<<<<< HEAD
 		}
 		/*And again, if we're within ~0.15 but it's at one of the borders, allow it too.*/
 		else if ((((yaw > 3) && (desiredAngle < -3)) || ((yaw < -3) && (yaw > 3))) && (driving == false))
+=======
+		}*/
+		/*And again, if we're within ~0.15 but it's at one of the borders, allow it too.*/
+		/*else if ((((yaw > 3) && (desiredAngle < -3)) || ((yaw < -3) && (yaw > 3))) && (driving == false))
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 
 		{
 			move_cmd.linear.x = 0.2;
 			move_cmd.angular.z = 0.0;
 			driving = true;
+<<<<<<< HEAD
 		}
 		/*If we get here then the difference between our yaw and desired angle is too great, moving or not, seam or no seam, so start turning*/
 		else
+=======
+		}*/
+		/*If we get here then the difference between our yaw and desired angle is too great, moving or not, seam or no seam, so start turning*/
+		/*else
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 		{
 			move_cmd.linear.x = 0.0;
 			move_cmd.angular.z = 0.2;
 			driving = false;
 		}
+<<<<<<< HEAD
     		cmd_vel_pub.publish(move_cmd);
 
 }
+=======
+
+
+    		cmd_vel_pub.publish(move_cmd);
+
+}*/
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 
 /*The battery level monitor while the robot is active, marks the decrease in battery level until it kills them*/
 /*void AssertiveBehaviour::whileActive()
@@ -328,6 +434,7 @@ void AssertiveBehaviour::whileRecharging()
 	}
 }*/
 
+<<<<<<< HEAD
 void AssertiveBehaviour::openGripper()
 {
 
@@ -360,6 +467,8 @@ void AssertiveBehaviour::legAhead()
     
 }
 
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 void AssertiveBehaviour::fightingBehaviour()
 {
     move_cmd.linear.x = 0.0;
@@ -369,13 +478,17 @@ void AssertiveBehaviour::fightingBehaviour()
 
 void AssertiveBehaviour::panickingBehaviour()
 {
+<<<<<<< HEAD
 /*Something too close, emergency stop/obstacle avoid, if leg also detected then be angry*/
 
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
     move_cmd.linear.x = 0.0;
     move_cmd.angular.z = 0.0;
     cmd_vel_pub.publish(move_cmd);
 }
 
+<<<<<<< HEAD
 
 
 void AssertiveBehaviour::navigatingBehaviour()
@@ -398,6 +511,32 @@ void AssertiveBehaviour::navigatingBehaviour()
     else
     {
         ROS_INFO("[ASSERTIVE_BEHAVIOUR] No Vicon pose received.");
+=======
+void AssertiveBehaviour::navigatingBehaviour()
+{
+    /*
+    if(ros::Time::now() > (cycleStartTime + ros::Duration(15)))
+    {
+        move_cmd.linear.x = 0.2;
+		move_cmd.angular.z = 0.0;
+        cycleStartTime = ros::Time::now();
+    }
+    else if (ros::Time::now() > (cycleStartTime + ros::Duration(10)))
+    {
+        move_cmd.linear.x = 0.2;
+        move_cmd.angular.z = 0.2;
+    }
+    else
+    {
+        move_cmd.linear.x = 0.2;
+        move_cmd.angular.z = 0.0;
+    }
+    cmd_vel_pub.publish(move_cmd);*/
+    
+    if (laserReceived == true)
+    {
+        ROS_INFO("[ASSERTIVE_BEHAVIOUR] Forward laser reading: %f.", latestLaserScan[90]);
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
     }
 
 }
@@ -408,11 +547,19 @@ void AssertiveBehaviour::spinOnce() {
 
     if(panicking)
     {
+<<<<<<< HEAD
         panickingBehaviour();
     }
     else if(fighting)
     {
         fightingBehaviour();
+=======
+
+    }
+    else if(fighting)
+    {
+    
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
     }
     else if(navigating)
     {

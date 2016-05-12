@@ -76,6 +76,7 @@ CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/ros_comm
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/ros_comm/tools/rosbagmigration/manifest.xml
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/geometry_msgs/manifest.xml
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/sensor_msgs/manifest.xml
+<<<<<<< HEAD
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/nav_msgs/manifest.xml
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/bullet/manifest.xml
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/geometry/angles/manifest.xml
@@ -89,6 +90,8 @@ CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/geometry
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/diagnostic_msgs/manifest.xml
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/diagnostics/diagnostic_updater/manifest.xml
 CMakeFiles/assertive_behaviour.dir/src/main.o: /home/autolab/ros/stacks/usc-ros-pkg/p2os/p2os_driver/manifest.xml
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/generated
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/ros_comm/messages/rosgraph_msgs/msg_gen/generated
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp/msg_gen/generated
@@ -97,6 +100,7 @@ CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/ros_comm
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/generated
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/sensor_msgs/msg_gen/generated
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/sensor_msgs/srv_gen/generated
+<<<<<<< HEAD
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/nav_msgs/msg_gen/generated
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/common_msgs/nav_msgs/srv_gen/generated
 CMakeFiles/assertive_behaviour.dir/src/main.o: /opt/ros/electric/stacks/geometry/tf/msg_gen/generated
@@ -115,6 +119,19 @@ CMakeFiles/assertive_behaviour.dir/src/main.i: cmake_force
 CMakeFiles/assertive_behaviour.dir/src/main.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/assertive_behaviour.dir/src/main.s"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -DBT_USE_DOUBLE_PRECISION -DBT_EULER_DEFAULT_ZYX -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -S /home/autolab/src/Assertive_Behaviour/src/main.cpp -o CMakeFiles/assertive_behaviour.dir/src/main.s
+=======
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/autolab/src/Assertive_Behaviour/build/CMakeFiles $(CMAKE_PROGRESS_1)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/assertive_behaviour.dir/src/main.o"
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -o CMakeFiles/assertive_behaviour.dir/src/main.o -c /home/autolab/src/Assertive_Behaviour/src/main.cpp
+
+CMakeFiles/assertive_behaviour.dir/src/main.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/assertive_behaviour.dir/src/main.i"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -E /home/autolab/src/Assertive_Behaviour/src/main.cpp > CMakeFiles/assertive_behaviour.dir/src/main.i
+
+CMakeFiles/assertive_behaviour.dir/src/main.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/assertive_behaviour.dir/src/main.s"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -S /home/autolab/src/Assertive_Behaviour/src/main.cpp -o CMakeFiles/assertive_behaviour.dir/src/main.s
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 
 CMakeFiles/assertive_behaviour.dir/src/main.o.requires:
 .PHONY : CMakeFiles/assertive_behaviour.dir/src/main.o.requires

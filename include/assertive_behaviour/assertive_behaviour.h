@@ -2,6 +2,7 @@
 #define ASSERTIVE_BEHAVIOUR_H
 
 #include <ros/ros.h>
+<<<<<<< HEAD
 #include <cmath>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -14,6 +15,17 @@
 #include <std_msgs/Float32.h>
 #include <p2os_driver/GripperState.h>
 #include <std_msgs/UInt16.h>
+=======
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
+/*#include <geometry_msgs/Pose.h>*/
+#include <geometry_msgs/Twist.h>
+#include <sensor_msgs/LaserScan.h>
+/*#include <geometry_msgs/TransformStamped.h>
+#include <std_msgs/Empty.h>*/
+#include <std_msgs/Float32.h>
+//#include <std_msgs/UInt16.h>
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 //#include <vector>
 
 #define PI 3.14159
@@ -26,6 +38,7 @@ private:
     bool panicking;
     bool fighting;
     bool navigating;
+<<<<<<< HEAD
     bool driving;
     /*This stores the latest laser scan's 180 ranges*/
 	//std::vector<float> latestLaserScan;
@@ -41,6 +54,10 @@ private:
     
     bool returnTrip;
 	
+=======
+	std::vector<float> latestLaserScan;
+    bool laserReceived;
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 	/*Controls the loop rate*/
  	double loopHz;
  	
@@ -83,6 +100,7 @@ private:
 	//double midChargeTime;
 	//double lowChargeTime;
 
+<<<<<<< HEAD
 
     /*This callback is for the laser*/
   	//void laserCallback(const sensor_msgs::LaserScan scanData);
@@ -90,6 +108,9 @@ private:
   	void legCallback(const geometry_msgs::PoseArray legData);
   	void viconCallback(const geometry_msgs::PoseArray poseData);
   	
+=======
+  	void laserCallback(const sensor_msgs::LaserScan scanData);
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 	//void chargeLevelCallback(const std_msgs::Float32 charge);
 	//void buoyCallback(const std_msgs::UInt16 irReading);
 	//float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn);
@@ -99,15 +120,19 @@ private:
 	void navigatingBehaviour();
 	void fightingBehaviour();
 	void panickingBehaviour();
+<<<<<<< HEAD
 	void openGripper();
 	void closeGripper();
 	void legAhead();
 	void waypointing();
 	float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn);
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 
 protected:
   ros::NodeHandle nh;
   ros::NodeHandle privNh;
+<<<<<<< HEAD
   /*Publisher connected to pioneer's cmd_vel topic*/
 	ros::Publisher cmd_vel_pub;
 	ros::Publisher gripper_pub;
@@ -120,11 +145,20 @@ protected:
 	geometry_msgs::Twist move_cmd;
 	
 	
+=======
+  
+ 	ros::Subscriber laserSub;
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 	/*ros::Subscriber chargeLevelSub;
 	ros::Subscriber buoySub;
     */
     
+<<<<<<< HEAD
     
+=======
+    /*Publisher connected to pioneer's cmd_vel topic*/
+	ros::Publisher cmd_vel_pub;
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 	
 	
 	/*ros::Publisher dock_pub;
@@ -132,7 +166,12 @@ protected:
 
  	geometry_msgs::TransformStamped ownPose;
 */
+<<<<<<< HEAD
 	
+=======
+	/*Movement orders for Pioneer*/
+	geometry_msgs::Twist move_cmd;
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 
 
 public:

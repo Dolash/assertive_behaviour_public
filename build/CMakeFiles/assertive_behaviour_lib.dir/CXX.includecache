@@ -9,26 +9,36 @@
 ../include/assertive_behaviour/assertive_behaviour.h
 ros/ros.h
 -
+<<<<<<< HEAD
 cmath
 -
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 boost/thread.hpp
 -
 boost/bind.hpp
 -
+<<<<<<< HEAD
 geometry_msgs/Pose.h
 -
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 geometry_msgs/Twist.h
 -
 sensor_msgs/LaserScan.h
 -
+<<<<<<< HEAD
 geometry_msgs/PoseArray.h
 -
 geometry_msgs/TransformStamped.h
 -
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 std_msgs/Empty.h
 -
 std_msgs/Float32.h
 -
+<<<<<<< HEAD
 p2os_driver/GripperState.h
 -
 std_msgs/UInt16.h
@@ -396,6 +406,13 @@ std_msgs/Header.h
 geometry_msgs/Transform.h
 /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/geometry_msgs/Transform.h
 
+=======
+
+/home/autolab/src/Assertive_Behaviour/src/assertive_behaviour.cpp
+assertive_behaviour/assertive_behaviour.h
+/home/autolab/src/Assertive_Behaviour/src/assertive_behaviour/assertive_behaviour.h
+
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/Twist.h
 string
 -
@@ -444,6 +461,7 @@ ros/macros.h
 ros/assert.h
 /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/ros/assert.h
 
+<<<<<<< HEAD
 /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/Vector3Stamped.h
 string
 -
@@ -470,6 +488,8 @@ std_msgs/Header.h
 geometry_msgs/Vector3.h
 /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/geometry_msgs/Vector3.h
 
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 /opt/ros/electric/stacks/common_msgs/sensor_msgs/msg_gen/cpp/include/sensor_msgs/LaserScan.h
 string
 -
@@ -494,6 +514,7 @@ ros/assert.h
 std_msgs/Header.h
 /opt/ros/electric/stacks/common_msgs/sensor_msgs/msg_gen/cpp/include/sensor_msgs/std_msgs/Header.h
 
+<<<<<<< HEAD
 /opt/ros/electric/stacks/geometry/tf/include/tf/transform_datatypes.h
 string
 -
@@ -514,6 +535,8 @@ ros/time.h
 ros/console.h
 /opt/ros/electric/stacks/geometry/tf/include/tf/ros/console.h
 
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp/include/ros/advertise_options.h
 ros/forwards.h
 /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp/include/ros/ros/forwards.h
@@ -1084,6 +1107,7 @@ ros/assert.h
 std_msgs/header_deprecated_def.h
 -
 
+<<<<<<< HEAD
 /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/UInt16.h
 string
 -
@@ -1106,6 +1130,8 @@ ros/macros.h
 ros/assert.h
 /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/ros/assert.h
 
+=======
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/assert.h
 ros/console.h
 /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/ros/console.h
