@@ -1,0 +1,63 @@
+        <remap from="/scan" to="/scan_filtered" />
+        
+        
+        position: 
+      x: 0.0764549449086
+      y: -8.76084327698
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 0.0
+  - 
+    position: 
+      x: 0.622278392315
+      y: -4.16375684738
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 0.0
+  - 
+    position: 
+      x: 3.23125386238
+      y: -9.12476730347
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 0.0
+ 
+
+
+
+
+
+
+
+
+oses: 
+  - 
+    position: 
+      x: 1.58921980858
+      y: -4.30103683472
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 0.0
+  - 
+    position: 
+      x: 0.990286886692
+      y: -5.91771316528
+      z: 0.0
+    orientation: 
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 0.0
+  - 

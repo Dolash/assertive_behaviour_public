@@ -2,15 +2,18 @@
 #define ASSERTIVE_BEHAVIOUR_H
 
 #include <ros/ros.h>
+#include <cmath>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
-/*#include <geometry_msgs/Pose.h>*/
+#include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/LaserScan.h>
-/*#include <geometry_msgs/TransformStamped.h>
-#include <std_msgs/Empty.h>*/
+#include <geometry_msgs/PoseArray.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <std_msgs/Empty.h>
 #include <std_msgs/Float32.h>
-//#include <std_msgs/UInt16.h>
+#include <p2os_driver/GripperState.h>
+#include <std_msgs/UInt16.h>
 //#include <vector>
 
 #define PI 3.14159
@@ -23,8 +26,21 @@ private:
     bool panicking;
     bool fighting;
     bool navigating;
-	std::vector<float> latestLaserScan;
-    bool laserReceived;
+    bool driving;
+    /*This stores the latest laser scan's 180 ranges*/
+	//std::vector<float> latestLaserScan;
+    //bool laserReceived;
+    /*This stores the results of the latest leg detection sweep*/
+    geometry_msgs::PoseArray latestLegPoseArray;
+    geometry_msgs::PoseArray latestPoses;
+    bool legReceived;
+    /*This bool reports whether legs have been detected close to the front arc, risking collision.*/
+    bool legWarning;
+    
+    bool poseReceived;
+    
+    bool returnTrip;
+	
 	/*Controls the loop rate*/
  	double loopHz;
  	
@@ -67,7 +83,13 @@ private:
 	//double midChargeTime;
 	//double lowChargeTime;
 
-  	void laserCallback(const sensor_msgs::LaserScan scanData);
+
+    /*This callback is for the laser*/
+  	//void laserCallback(const sensor_msgs::LaserScan scanData);
+  	/*This callback is for the leg detector using laser data*/
+  	void legCallback(const geometry_msgs::PoseArray legData);
+  	void viconCallback(const geometry_msgs::PoseArray poseData);
+  	
 	//void chargeLevelCallback(const std_msgs::Float32 charge);
 	//void buoyCallback(const std_msgs::UInt16 irReading);
 	//float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn);
@@ -77,18 +99,32 @@ private:
 	void navigatingBehaviour();
 	void fightingBehaviour();
 	void panickingBehaviour();
+	void openGripper();
+	void closeGripper();
+	void legAhead();
+	void waypointing();
+	float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn);
 
 protected:
   ros::NodeHandle nh;
   ros::NodeHandle privNh;
-  
- 	ros::Subscriber laserSub;
+  /*Publisher connected to pioneer's cmd_vel topic*/
+	ros::Publisher cmd_vel_pub;
+	ros::Publisher gripper_pub;
+    /*Subscriber for the laser*/
+ 	//ros::Subscriber laserSub;
+ 	/*Subscriber for the leg detection from laser scans*/
+ 	ros::Subscriber legSub;
+ 	ros::Subscriber poseSub;
+ 	/*Movement orders for Pioneer*/
+	geometry_msgs::Twist move_cmd;
+	
+	
 	/*ros::Subscriber chargeLevelSub;
 	ros::Subscriber buoySub;
     */
     
-    /*Publisher connected to pioneer's cmd_vel topic*/
-	ros::Publisher cmd_vel_pub;
+    
 	
 	
 	/*ros::Publisher dock_pub;
@@ -96,8 +132,7 @@ protected:
 
  	geometry_msgs::TransformStamped ownPose;
 */
-	/*Movement orders for Pioneer*/
-	geometry_msgs::Twist move_cmd;
+	
 
 
 public:

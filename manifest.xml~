@@ -14,7 +14,7 @@
   <depend package="sensor_msgs"/>
   <depend package="std_msgs"/>
   <depend package="p2os_driver"/>
-    <depend package="tf"/>
+
 </package>
 
 
