@@ -3,7 +3,6 @@
 
 CMakeFiles/assertive_behaviour.dir/src/main.o
  ../include/assertive_behaviour/assertive_behaviour.h
-<<<<<<< HEAD
  /home/autolab/ros/stacks/usc-ros-pkg/p2os/p2os_driver/msg_gen/cpp/include/p2os_driver/GripState.h
  /home/autolab/ros/stacks/usc-ros-pkg/p2os/p2os_driver/msg_gen/cpp/include/p2os_driver/GripperState.h
  /home/autolab/ros/stacks/usc-ros-pkg/p2os/p2os_driver/msg_gen/cpp/include/p2os_driver/LiftState.h
@@ -14,9 +13,6 @@ CMakeFiles/assertive_behaviour.dir/src/main.o
  /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/Quaternion.h
  /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/Transform.h
  /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/TransformStamped.h
-=======
- /home/autolab/src/Assertive_Behaviour/src/main.cpp
->>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
  /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/Twist.h
  /opt/ros/electric/stacks/common_msgs/geometry_msgs/msg_gen/cpp/include/geometry_msgs/Vector3.h
  /opt/ros/electric/stacks/common_msgs/sensor_msgs/msg_gen/cpp/include/sensor_msgs/LaserScan.h
@@ -64,10 +60,6 @@ CMakeFiles/assertive_behaviour.dir/src/main.o
  /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/Empty.h
  /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/Float32.h
  /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/Header.h
-<<<<<<< HEAD
- /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/UInt16.h
-=======
->>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
  /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/assert.h
  /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/console.h
  /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/static_assert.h

@@ -13,8 +13,13 @@
   <depend package="geometry_msgs"/>
   <depend package="sensor_msgs"/>
   <depend package="std_msgs"/>
+<<<<<<< HEAD
   <depend package="p2os_driver"/>
+    <depend package="tf"/>
+=======
+  <!--<depend package="vector"/>-->
 
+>>>>>>> 30a2e6b7dcb828d29aa193e96b809325766d5dc8
 </package>
 
 
