@@ -16,6 +16,7 @@
 
   <depend package="p2os_driver"/>
     <depend package="tf"/>
+    <depend package="audio_common_msgs"/>
 
   <!--<depend package="vector"/>-->
 </package>

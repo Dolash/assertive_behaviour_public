@@ -13,6 +13,8 @@
 #include <std_msgs/Empty.h>
 #include <p2os_driver/GripperState.h>
 #include <std_msgs/Float32.h>
+#include <p2os_driver/SonarArray.h>
+#include <audio_common_msgs/AudioData.h>
 //#include <std_msgs/UInt16.h>
 //#include <vector>
 
@@ -29,7 +31,9 @@ private:
     bool driving;
     /*This stores the latest laser scan's 180 ranges*/
 	std::vector<float> latestLaserScan;
+	std::vector<double> latestSonarScan;
     bool laserReceived;
+    bool sonarReceived;
     /*This stores the results of the latest leg detection sweep*/
     geometry_msgs::PoseArray latestLegPoseArray;
     geometry_msgs::PoseArray latestPoses;
@@ -89,6 +93,7 @@ private:
   	void legCallback(const geometry_msgs::PoseArray legData);
   	void viconCallback(const geometry_msgs::PoseArray poseData);
   	void laserCallback(const sensor_msgs::LaserScan scanData);
+  	void sonarCallback(const p2os_driver::SonarArray sonarData);
 	//void chargeLevelCallback(const std_msgs::Float32 charge);
 	//void buoyCallback(const std_msgs::UInt16 irReading);
 	//float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn);
@@ -116,6 +121,7 @@ protected:
  	ros::Subscriber legSub;
  	ros::Subscriber poseSub;
  	ros::Subscriber laserSub;
+ 	ros::Subscriber sonarSub;
  	/*Movement orders for Pioneer*/
 	geometry_msgs::Twist move_cmd;
 

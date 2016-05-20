@@ -32,6 +32,7 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         navigating = true;
         //laserReceived = false;
         legReceived = false;
+        sonarReceived = false;
         legWarning = false;
         poseReceived = false;
         returnTrip = false;
@@ -92,6 +93,7 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
   	poseSub = nh.subscribe("/global_poses", 1, &AssertiveBehaviour::viconCallback, this);
   /*The subscriptions, one for the robot's own pose, one for the battery's current charge level*/
   	laserSub = nh.subscribe("/scan", 1, &AssertiveBehaviour::laserCallback, this);
+  	sonarSub = nh.subscribe("/sonar", 1, &AssertiveBehaviour::sonarCallback, this);
 	/*chargeLevelSub = nh.subscribe("battery/charge_ratio", 1, &assertiveBehaviour::chargeLevelCallback, this);
 	buoySub = nh.subscribe("ir_omni", 1, &assertiveBehaviour::buoyCallback, this);*/
   /* The publishers, one to cmd_vel to send movement commands,
@@ -131,6 +133,12 @@ void AssertiveBehaviour::viconCallback(const geometry_msgs::PoseArray poseData) 
 void AssertiveBehaviour::laserCallback(const sensor_msgs::LaserScan scanData) {
     latestLaserScan = scanData.ranges;
     laserReceived = true;
+}
+
+//void AssertiveBehaviour::sonarCallback(const p2os_driver::SonarArray::ConstPtr & sonarData) {
+void AssertiveBehaviour::sonarCallback(const p2os_driver::SonarArray sonarData) {
+    latestSonarScan = sonarData.ranges;
+    sonarReceived = true;
 }
 
 /*For the charge level subscriber, extracting that charge level from the message.*/
@@ -262,8 +270,32 @@ void AssertiveBehaviour::legAhead()
 
 void AssertiveBehaviour::fightingBehaviour()
 {
-    move_cmd.linear.x = 0.0;
-    move_cmd.angular.z = 0.0;
+
+    /*Advancing*/
+
+    /*Backing up*/
+    /**/
+    if(latestSonarScan[8] > 0.5 || latestSonarScan[9] > 0.5 || latestSonarScan[10] > 0.5)
+    {
+        move_cmd.linear.x = 0.0;
+        move_cmd.angular.z = 0.0;
+    }
+    else if(latestSonarScan[8] > 0.5 || latestSonarScan[9] > 0.5 || latestSonarScan[10] > 0.5)
+    {
+        move_cmd.linear.x = 0.0;
+        move_cmd.angular.z = 0.0;
+    }
+    else if(latestSonarScan[8] > 0.5 || latestSonarScan[9] > 0.5 || latestSonarScan[10] > 0.5)
+    {
+        move_cmd.linear.x = 0.0;
+        move_cmd.angular.z = 0.0;
+    }
+    /*Looks like you can't back up at all*/
+    else 
+    {
+        move_cmd.linear.x = 0.0;
+        move_cmd.angular.z = 0.0;
+    }
     cmd_vel_pub.publish(move_cmd);
 }
 
