@@ -49,7 +49,6 @@ SET(CMAKE_C_INCLUDE_PATH
   "/opt/ros/electric/ros/core/roslib/include"
   "/opt/ros/electric/ros/tools/rospack"
   "/opt/ros/electric/ros/tools/rospack/include"
-  "/home/autolab/ros/stacks/audio_common/audio_common_msgs/msg_gen/cpp/include"
   )
 SET(CMAKE_CXX_INCLUDE_PATH ${CMAKE_C_INCLUDE_PATH})
 SET(CMAKE_Fortran_INCLUDE_PATH ${CMAKE_C_INCLUDE_PATH})

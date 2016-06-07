@@ -14,8 +14,8 @@
 #include <p2os_driver/GripperState.h>
 #include <std_msgs/Float32.h>
 #include <p2os_driver/SonarArray.h>
-#include <audio_common_msgs/AudioData.h>
-//#include <std_msgs/UInt16.h>
+#include <std_msgs/UInt16.h>
+#include <autonomy_leds_msgs/LED.h>
 //#include <vector>
 
 #define PI 3.14159
@@ -31,7 +31,9 @@ private:
     bool driving;
     /*This stores the latest laser scan's 180 ranges*/
 	std::vector<float> latestLaserScan;
+	/*This stores the latest sonar scan's 16 ranges*/
 	std::vector<double> latestSonarScan;
+	/*These bools confirm that the laser and sonar are transmitting, so that they won't be used unless these are triggered.*/
     bool laserReceived;
     bool sonarReceived;
     /*This stores the results of the latest leg detection sweep*/
@@ -41,65 +43,31 @@ private:
     /*This bool reports whether legs have been detected close to the front arc, risking collision.*/
     bool legWarning;
     
+    /*These bools are set according to rear sonar readings and used when deciding how to back away.*/
+    bool behindRightClear;
+    bool behindLeftClear;
+    bool behindMiddleClear;
+    
+    /*This bool confirms the vicon is transmitting poses correctly*/
     bool poseReceived;
     
     bool returnTrip;
 	/*Controls the loop rate*/
  	double loopHz;
  	
-	/*The robot's yaw, extracted from the localization subscription*/
- 	//double yaw;
-	/*These two check that we're receiving poses and charge readings from the two subscriptions, the loop doesn't work without them*/
- 	//bool poseReceived;
-	//bool chargeReceived;
-	/*Used while homing in on recharge location, to differentiate between when you stop to turn toward the target and start driving forward*/
-	//bool driving;
+ 	
+ 	
+ 	bool viconMode;
+ 	
 
-	/*parameters that control when the robot goes to recharge if using battery level information*/
-	//double chargeLevel;
+	
 
-	//double chargeLatest;
-	//double highThreshold;
-	//double midThreshold;
-	//double lowThreshold;
-
-	/*state variables*/
-	//bool recharging;
-	//int chargeState;
-	//int buoyPresence;
-
-	/*parameters that name the robot, and specify where its charger is in the world*/
-	//double chargerX;
-	//double chargerY1;
-	//double chargerY2;
-	//bool chargerPatrolReset;
-	//std::string robotName;
-
-	/*parameters that control when the robot goes to recharge if using time*/
-
-	//bool chargeTime;
-	//bool backupTimeCheck;
-	//double highTime;
-	//double midTime;
-	//double lowTime;
-	//double highChargeTime;
-	//double midChargeTime;
-	//double lowChargeTime;
-
-
-    /*This callback is for the laser*/
-  	//void laserCallback(const sensor_msgs::LaserScan scanData);
   	/*This callback is for the leg detector using laser data*/
   	void legCallback(const geometry_msgs::PoseArray legData);
   	void viconCallback(const geometry_msgs::PoseArray poseData);
   	void laserCallback(const sensor_msgs::LaserScan scanData);
   	void sonarCallback(const p2os_driver::SonarArray sonarData);
-	//void chargeLevelCallback(const std_msgs::Float32 charge);
-	//void buoyCallback(const std_msgs::UInt16 irReading);
-	//float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn);
-	//void approachCharger();
-	//void whileActive();
-	//void whileRecharging();
+	
 	void navigatingBehaviour();
 	void fightingBehaviour();
 	void panickingBehaviour();
@@ -108,24 +76,39 @@ private:
 	void legAhead();
 	void waypointing();
 	float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn);
+	void reverseClearance();
+	void viconSubjectAhead();
 
 protected:
   ros::NodeHandle nh;
   ros::NodeHandle privNh;
   /*Publisher connected to pioneer's cmd_vel topic*/
 	ros::Publisher cmd_vel_pub;
+	/*Publisher to control gripper*/
 	ros::Publisher gripper_pub;
-    /*Subscriber for the laser*/
- 	//ros::Subscriber laserSub;
+	/*Publisher that says what sounds to play*/
+	ros::Publisher audio_pub;
+	/*Publisher to set the LEDs*/
+	ros::Publisher led_pub;
+	
+	/*Movement orders for Pioneer*/
+	geometry_msgs::Twist move_cmd;
+    /*An audio request*/
+    std_msgs::UInt16 audio_cmd;
+    /*A gripper command*/
+    p2os_driver::GripperState grip_cmd;
+    /*An LED command*/
+	autonomy_leds_msgs::LED led_cmd;
+	
  	/*Subscriber for the leg detection from laser scans*/
  	ros::Subscriber legSub;
+ 	/*Subscriber for vicon-derived pose*/
  	ros::Subscriber poseSub;
+ 	/*Subscriber for filtered laser data*/
  	ros::Subscriber laserSub;
+ 	/*Subscriber for raw sonar data*/
  	ros::Subscriber sonarSub;
- 	/*Movement orders for Pioneer*/
-	geometry_msgs::Twist move_cmd;
-
-
+ 	
 public:
   AssertiveBehaviour(ros::NodeHandle& nh);
   ~AssertiveBehaviour();

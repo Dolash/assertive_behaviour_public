@@ -1,5 +1,4 @@
 #include <tf/transform_datatypes.h>
-//#include <tf/transform_datatypes.h>
 #include "assertive_behaviour/assertive_behaviour.h"
 
 /*Jacob's function for extracting the yaw from the Quaternion you get from Vicon. Thanks, Jacob!*/
@@ -9,15 +8,6 @@
   double r, p, y;
   m.getRPY(r, p, y);
   return y;
-}*/
-
-/*I'm not using this, but in the waypoint driving bit this'd be useful to determine how off-target you are.*/
-//TODO replace using <angles/angles.h>
-/*double normalizeAngle(const double& a) {
-  double angle = a;
-  while (angle < -PI) angle += TWO_PI;
-  while (angle > PI) angle += TWO_PI;
-  return angle;
 }*/
 
 AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh) 
@@ -30,7 +20,7 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         panicking = false;
         fighting = false;
         navigating = true;
-        //laserReceived = false;
+
         legReceived = false;
         sonarReceived = false;
         legWarning = false;
@@ -38,74 +28,35 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         returnTrip = false;
         driving = false;
         laserReceived = false;
-	    //backupTime = ros::Time::now();
-	    //debugTime = ros::Time::now();
+        behindRightClear = false;
+        behindLeftClear = false;
+        behindMiddleClear = false;
+        viconMode = true;
 
-  /*poseReceived(false),
-	chargeReceived(false),
-	driving(false),
-  nh(nh),
-  privNh("~") {*/
+
   
-  /*privNh.param<double>("yaw", yaw, 0.0);*/
 
-	/*these parameters control at what battery levels to go assertive and to stop recharging.*/
-	/*privNh.param<double>("high_threshold", highThreshold, 0.70);
-	privNh.param<double>("mid_threshold", midThreshold, 0.60);
-	privNh.param<double>("low_threshold", lowThreshold, 0.50);*/
-
-	/*The name parameter is used to identify the particular robot*/
-	//privNh.param<std::string>("name", robotName, "cb13");
-
-	/*The boundaries of the "charger area" the robot patrols when looking for a station to dock at. Starts at y1 and patrols back and forth to y2*/
-	/*privNh.param<double>("charger_y1", chargerY1, -3.01000);
-	privNh.param<double>("charger_y2", chargerY2, 3.4000);*/
-
-	/*Controls which stage of its patrol the robot is in while moving up and down the y-axis looking for a docking station*/
-	//privNh.param<bool>("charger_patrol_reset", chargerPatrolReset, false);
-
-	/*The boundary of the "charger area" on the X-axis, which the robot drives to before going up and down the Y to check the different stations*/
-	//privNh.param<double>("charger_x", chargerX, -2.1800);
-
-	/*these parameters are used to control the assertive times when using time rather than battery charge level to control recharging.*/
-	/*privNh.param<bool>("charge_time", chargeTime, true);
-	privNh.param<double>("high_time", highTime, 30);
-	privNh.param<double>("mid_time", midTime, 20);
-	privNh.param<double>("low_time", lowTime, 10);
-	privNh.param<double>("high_charge_time", highChargeTime, 30);
-	privNh.param<double>("mid_charge_time", midChargeTime, 20);
-	privNh.param<double>("low_charge_time", lowChargeTime, 10);*/
-
-  	/*const std::string poseTopic = robotName + "/pose";
-	chargeLevel = 0.0;
-	buoyPresence = 0;
-	chargeLatest = 0;
-	
-	backupTimeCheck = false;*/
-  // Convert yaw to radians
- 	/*yaw = yaw * PI / 180.0;
-	recharging = false;
-	chargeState = 0;*/
-    /*Subscriber for the laser*/
-  	//laserSub = nh.subscribe("scan", 1, &AssertiveBehaviour::laserCallback, this);
   	/*Subscriber for the laser-based leg detector*/
   	legSub = nh.subscribe("/legs", 1, &AssertiveBehaviour::legCallback, this);
-  	poseSub = nh.subscribe("/global_poses", 1, &AssertiveBehaviour::viconCallback, this);
-  /*The subscriptions, one for the robot's own pose, one for the battery's current charge level*/
+  	/*If we're using the vicon, subscribe for our pose that way*/
+  	if (viconMode == true)
+  	{
+  	    poseSub = nh.subscribe("/global_poses", 1, &AssertiveBehaviour::viconCallback, this);
+  	}
+  	else
+  	{
+  	    /*However else we're going to get our pose in non-vicon situations*/
+  	}
   	laserSub = nh.subscribe("/scan", 1, &AssertiveBehaviour::laserCallback, this);
   	sonarSub = nh.subscribe("/sonar", 1, &AssertiveBehaviour::sonarCallback, this);
-	/*chargeLevelSub = nh.subscribe("battery/charge_ratio", 1, &assertiveBehaviour::chargeLevelCallback, this);
-	buoySub = nh.subscribe("ir_omni", 1, &assertiveBehaviour::buoyCallback, this);*/
-  /* The publishers, one to cmd_vel to send movement commands,
-   * one to the dock topic when it's time to dock,
-   * and one to the undock topic when it's time to undock.
-   */
+	
 	cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 30);
 	gripper_pub = nh.advertise<p2os_driver::GripperState>("/gripper_control", 30);
-	/*
-	dock_pub = nh.advertise<std_msgs::Empty>("dock", 30);
-	undock_pub = nh.advertise<std_msgs::Empty>("undock", 30);
-*/
+	audio_pub = nh.advertise<std_msgs::UInt16>("/sound_player", 1);
+	led_pub = nh.advertise<autonomy_leds_msgs::LED>("/leds/set_led", 1);
+
+    audio_cmd.data = 18;
+    audio_pub.publish(audio_cmd);
 	ROS_INFO("[ASSERTIVE_BEHAVIOUR] Initialized.");
 }
 
@@ -113,47 +64,33 @@ AssertiveBehaviour::~AssertiveBehaviour() {
  	ROS_INFO("[ASSERTIVE_BEHAVIOUR] Destroyed.");
 }
 
-/*For the laser subscriber, extracting the data from the message.*/
-/*void AssertiveBehaviour::laserCallback(const sensor_msgs::LaserScan scanData) {
-    latestLaserScan = scanData.ranges;
-    laserReceived = true;
-}*/
-
 /*For the leg subscriber, extracting the data from the message.*/
 void AssertiveBehaviour::legCallback(const geometry_msgs::PoseArray legData) {
     latestLegPoseArray = legData;
     legReceived = true;
 }
 
+/*For the vicon subscriber, extracting the data from the message.*/
 void AssertiveBehaviour::viconCallback(const geometry_msgs::PoseArray poseData) {
     latestPoses = poseData;
     poseReceived = true;
 }
 
+/*For the laser subscriber, extracting the data from the message.*/
 void AssertiveBehaviour::laserCallback(const sensor_msgs::LaserScan scanData) {
     latestLaserScan = scanData.ranges;
     laserReceived = true;
 }
 
+/*For the sonar subscriber, extracting the data from the message.*/
 //void AssertiveBehaviour::sonarCallback(const p2os_driver::SonarArray::ConstPtr & sonarData) {
 void AssertiveBehaviour::sonarCallback(const p2os_driver::SonarArray sonarData) {
     latestSonarScan = sonarData.ranges;
     sonarReceived = true;
 }
 
-/*For the charge level subscriber, extracting that charge level from the message.*/
-/*void AssertiveBehaviour::chargeLevelCallback(const std_msgs::Float32 charge) {
-	chargeLatest = charge.data;
-  	chargeReceived = true;
-}
 
-void AssertiveBehaviour::buoyCallback(const std_msgs::UInt16 irReading) {
-  	buoyPresence = irReading.data;
-  	
-}*/
-
-
-/*For calculating the angle we want to be turned in order to be facing our target (in this case, the charger)*/
+/*For calculating the angle we want to be turned in order to be facing our target, given your pose and the goal location's pose*/
 float AssertiveBehaviour::getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn)
 {
 	float result = 0;
@@ -177,7 +114,8 @@ float AssertiveBehaviour::getDesiredAngle(float targetX, float targetY, float cu
 }
 
 
-/*When going to assertive, call this to determine what speed forward/what turn angle you need in order to drive back and forth between the edges of the "charging area"*/
+/*By using your pose and the goal location pose, this function will determine the velocity command it should next issue to continue a normal journey.*/
+/*TODO: This is using quaternions since I'm assuming vicon, might need to adjust.*/
 void AssertiveBehaviour::waypointing()
 {
         float desiredX;
@@ -196,7 +134,7 @@ void AssertiveBehaviour::waypointing()
             desiredY = 1;
         }
 
-	/*Now we calculate the yaw we'd want from our current position to be driving toward the assertive station.*/
+	/*Now we calculate the yaw we'd want from our current position to be driving toward the goal.*/
 		desiredAngle = getDesiredAngle(desiredX, desiredY, latestPoses.poses[0].position.x, latestPoses.poses[0].position.y);
 		/*If we're moving and our current yaw is within 0.25 of what we want, keep driving*/
 		if ((yaw > (desiredAngle - 0.25)) && (yaw < (desiredAngle + 0.25)) && (driving == true))
@@ -238,15 +176,21 @@ void AssertiveBehaviour::waypointing()
 
 }
 
+/*The functions that open and close the gripper.*/
 void AssertiveBehaviour::openGripper()
 {
-
+    /*TODO: Check message format for this*/
+    gripper_pub.publish(grip_cmd);
 }
 void AssertiveBehaviour::closeGripper()
 {
-
+    /*TODO: Check message format for this*/
+    gripper_pub.publish(grip_cmd);
 }
 
+
+/*This function uses the leg detector to detect humans stopped in the front arc.*/
+/*TODO: Fill out or integrate into a proper human detector/subject detector*/
 void AssertiveBehaviour::legAhead()
 {
     if (legReceived == true)
@@ -268,29 +212,79 @@ void AssertiveBehaviour::legAhead()
     }   
 }
 
+/*When this behaviour is being used with the vicon, this function detects if there is a human or robot subject in the robot's way using their vicon poses. This is an alternative to a sensor-mediated version.*/
+/*TODO: Even if I'm not using vicon data to control, I may want to be logging it all.*/
+void AssertiveBehaviour::viconSubjectAhead()
+{
+
+    /*Take your pose and orientation compare to the pose of every other tracked subject and if one is detected then set that detection to true*/
+
+}
+
+
+/*A simple function for testing the clearance behind the robot, to be called before backing up
+TODO: Replace this with sliding box*/
+void AssertiveBehaviour::reverseClearance()
+{
+    if (sonarReceived == true)
+    {
+        if(latestSonarScan[8] > 0.5 && latestSonarScan[9] > 0.5 && latestSonarScan[10] > 0.5)
+        {
+            behindRightClear = true;
+        }
+        else
+        {
+            behindRightClear = false;
+        }
+        if(latestSonarScan[13] > 0.5 && latestSonarScan[14] > 0.5 && latestSonarScan[15] > 0.5)
+        {
+            behindLeftClear = true;
+        }
+        else
+        {
+            behindLeftClear = false;
+        }
+        if(latestSonarScan[11] > 0.5 && latestSonarScan[12] > 0.5)
+        {
+            behindMiddleClear = true;
+        }
+        else
+        {
+            behindMiddleClear = false;
+        }
+    }
+    else
+    {
+    
+    }
+}
+
+
+/*When a fight is initiated, the robot remains in this state until its forward interlocutor is cleared. The robot will either be unsure, or else if it decides the time is right it will advance, or else if it is being advanced upon it will back up.*/
 void AssertiveBehaviour::fightingBehaviour()
 {
 
     /*Advancing*/
-
+    /*TODO: Write this whole thing*/
+    
     /*Backing up*/
-    /**/
-    if(latestSonarScan[8] > 0.5 || latestSonarScan[9] > 0.5 || latestSonarScan[10] > 0.5)
+    /*TODO: Replace this with sliding box*/
+    reverseClearance();
+    if (behindRightClear == true)
     {
         move_cmd.linear.x = 0.0;
         move_cmd.angular.z = 0.0;
     }
-    else if(latestSonarScan[8] > 0.5 || latestSonarScan[9] > 0.5 || latestSonarScan[10] > 0.5)
+    else if (behindLeftClear == true)
     {
         move_cmd.linear.x = 0.0;
         move_cmd.angular.z = 0.0;
     }
-    else if(latestSonarScan[8] > 0.5 || latestSonarScan[9] > 0.5 || latestSonarScan[10] > 0.5)
+    else if (behindMiddleClear == true)
     {
         move_cmd.linear.x = 0.0;
         move_cmd.angular.z = 0.0;
     }
-    /*Looks like you can't back up at all*/
     else 
     {
         move_cmd.linear.x = 0.0;
@@ -299,9 +293,11 @@ void AssertiveBehaviour::fightingBehaviour()
     cmd_vel_pub.publish(move_cmd);
 }
 
+
+/*This behaviour is called if something is within emergency range or some other trapped/deadlocked scenario. One consideration is making the difference between "too close" as mindless obstacle and "too close" as other robot/person, where expressing displeasure at being pushed may be warranted.*/
 void AssertiveBehaviour::panickingBehaviour()
 {
-/*Something too close, emergency stop/obstacle avoid, if leg also detected then be angry*/
+/*TODO: Fill this in. Stop? Spin? Back away?*/
 
     move_cmd.linear.x = 0.0;
     move_cmd.angular.z = 0.0;
@@ -309,9 +305,10 @@ void AssertiveBehaviour::panickingBehaviour()
 }
 
 
-
+/*This is the normal driving behaviour when no interlocutor is detected and there's no obstacle-avoiding issues.*/
 void AssertiveBehaviour::navigatingBehaviour()
 {
+/*TODO: Fill out. Use pose information or a map to decide where to go with a goal in mind, maintain distance, and be ready to switch states if someone gets in your way or something gets too close.*/
     if (poseReceived == true)
     {
         //legAhead();
@@ -333,7 +330,7 @@ void AssertiveBehaviour::navigatingBehaviour()
     }
 }
 
-/*One run of the loop, picks which behaviour to do depending on whether the robot is currently seeking to assertive or not. Only fires if it can hear from its subscriptions*/
+/*One run of the loop, picks which behaviour to do depending on what state the robot is in. The different behaviours control state transitions based on their own criteria, this is just where the program reassesses which one to apply.*/
 void AssertiveBehaviour::spinOnce() {
 
     if(panicking)
@@ -353,35 +350,7 @@ void AssertiveBehaviour::spinOnce() {
     {
         ROS_INFO("[ASSERTIVE_BEHAVIOUR] Stateless");
     }
-	/*if (poseReceived && chargeReceived) 
-	{*/
 	
-		/*Updating the set of power level reports for the last minute*/
-		/*chargeHistory.push_back(chargeLatest);
-		if (chargeHistory.size() > loopHz*60)
-		{
-			chargeHistory.erase(chargeHistory.begin());
-		}
-		double sum = 0;
-		for (int i = 0; i < chargeHistory.size(); i++)
-		{
-			sum += chargeHistory[i];
-		}
-  		chargeLevel = sum/chargeHistory.size();
-
-		if (recharging == false)
-		{
-			whileActive();
-		}
-		else
-		{
-			whileRecharging();
-		}
-	}
-	else
-	{
-		ROS_INFO("[assertive_BEHAVIOUR] poseReceived: %d chargeReceived: %d", poseReceived, chargeReceived);
-	}*/
   	ros::spinOnce();
 }
 
@@ -390,8 +359,5 @@ void AssertiveBehaviour::spin() {
   ros::Rate rate(loopHz);
   while (ros::ok()) {
     spinOnce();
-    /*if (!rate.sleep()) {
-      ROS_WARN("[assertive_BEHAVIOUR] Loop running slowly.");
-    }*/
   }
 }

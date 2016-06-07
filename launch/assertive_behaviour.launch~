@@ -6,7 +6,7 @@
   <arg name="charger_y" default="0.0"/>-->
   <!--<arg name="config_file" default="$(find recharge_behaviour)/config/config.yaml"/>-->
 
-  <node name="Assertive_Behaviour" pkg="Assertive_Behaviour" type="assertive_aehaviour" output="screen">
+  <node name="Assertive_Behaviour" pkg="Assertive_Behaviour" type="assertive_behaviour" output="screen">
     <!-- localization from vicon -->
     <!--<remap from="$(arg name)/pose" to="/vicon/$(arg name)/$(arg name)" />
 
