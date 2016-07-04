@@ -8,6 +8,8 @@ CMakeFiles/assertive_behaviour_lib.dir/src/assertive_behaviour.o
  /home/autolab/ros/stacks/usc-ros-pkg/p2os/p2os_driver/msg_gen/cpp/include/p2os_driver/LiftState.h
  /home/autolab/ros/stacks/usc-ros-pkg/p2os/p2os_driver/msg_gen/cpp/include/p2os_driver/SonarArray.h
  /home/autolab/src/Assertive_Behaviour/src/assertive_behaviour.cpp
+ /home/autolab/src/autonomy_leds_msgs/msg_gen/cpp/include/autonomy_leds_msgs/Keyframe.h
+ /home/autolab/src/autonomy_leds_msgs/msg_gen/cpp/include/autonomy_leds_msgs/LED.h
  /opt/ros/electric/stacks/bullet/include/LinearMath/btMatrix3x3.h
  /opt/ros/electric/stacks/bullet/include/LinearMath/btMinMax.h
  /opt/ros/electric/stacks/bullet/include/LinearMath/btQuadWord.h
@@ -70,9 +72,11 @@ CMakeFiles/assertive_behaviour_lib.dir/src/assertive_behaviour.o
  /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp_traits/include/ros/message_traits.h
  /opt/ros/electric/stacks/ros_comm/clients/cpp/roscpp_traits/include/ros/service_traits.h
  /opt/ros/electric/stacks/ros_comm/messages/std_msgs/include/std_msgs/header_deprecated_def.h
+ /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/ColorRGBA.h
  /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/Empty.h
  /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/Float32.h
  /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/Header.h
+ /opt/ros/electric/stacks/ros_comm/messages/std_msgs/msg_gen/cpp/include/std_msgs/UInt16.h
  /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/assert.h
  /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/console.h
  /opt/ros/electric/stacks/ros_comm/tools/rosconsole/include/ros/static_assert.h
