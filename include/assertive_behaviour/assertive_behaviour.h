@@ -18,7 +18,8 @@
 #include <std_msgs/ColorRGBA.h>
 #include <autonomy_leds_msgs/LED.h>
 #include <autonomy_leds_msgs/Keyframe.h>
-//#include <vector>
+#include <vector>
+#include <unistd.h>
 
 #define PI 3.14159
 #define TWO_PI 6.283185*/
@@ -60,6 +61,9 @@ private:
  	
  	bool brave;
  	
+ 	bool firstTime;
+ 	
+ 	bool obstacle;
  	
  	bool returnTrip;
  	
@@ -90,7 +94,11 @@ private:
     int loseFightLights;
     int winFightLights;
     int backToNormalLights;
+    /*Components that will go into the keyframe that we will publish to control the lights*/
+    std::vector<std_msgs::ColorRGBA> lightColours;
+    std_msgs::ColorRGBA temp;
     
+    bool fightStarting;
 
   	/*This callback is for the leg detector using laser data*/
   	void legCallback(const geometry_msgs::PoseArray legData);
@@ -98,6 +106,7 @@ private:
   	void viconSubjectCallback(const geometry_msgs::TransformStamped::ConstPtr& pose);
   	void laserCallback(const sensor_msgs::LaserScan scanData);
   	void sonarCallback(const p2os_driver::SonarArray sonarData);
+  	
 	
 	void navigatingBehaviour();
 	void fightingBehaviour();
@@ -106,12 +115,14 @@ private:
 	void closeGripper();
 	//void legAhead();
 	void waypointing();
-	float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn);
+	float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn, bool destination);
 	void reverseClearance();
 	void viconSubjectAhead();
 	float obstacleAvoider(float desired);
 	void subjectAhead();
 	void setLights(int setting);
+	
+	void laserTest();
 
 protected:
   ros::NodeHandle nh;
