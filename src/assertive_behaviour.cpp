@@ -1,15 +1,6 @@
 #include <tf/transform_datatypes.h>
 #include "assertive_behaviour/assertive_behaviour.h"
 
-/*Jacob's function for extracting the yaw from the Quaternion you get from Vicon. Thanks, Jacob!*/
-/*double getYaw(const geometry_msgs::Quaternion& quat) {
-  tf::Quaternion q(quat.x, quat.y, quat.z, quat.w);
-  tf::Matrix3x3 m(q);
-  double r, p, y;
-  m.getRPY(r, p, y);
-  return y;
-}*/
-
 AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh) 
     : nh(nh),
     privNh("~") {
@@ -19,10 +10,7 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         panicking = false;
         fighting = false;
         navigating = true;
-
-        legReceived = false;
         sonarReceived = false;
-        legWarning = false;
         poseReceived = false;
         returnTrip = false;
         driving = false;
@@ -30,14 +18,15 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         behindRightClear = false;
         behindLeftClear = false;
         behindMiddleClear = false;
-        viconMode = true;
-        
+        viconMode = false;
+	humanReceived = false;
+        fightStarting = false;
         firstTime = false;
 
+
+	/*for Vicon mode*/
         startX = 1.53;
         startY = -2.9;
-
-        /**/
         goalX = -1.47;
         goalY = -2.9;
         
@@ -47,7 +36,7 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         winFightLights = 3;
         backToNormalLights = 4;
         
-        fightStarting = false;
+
         
         temp.r = 0;
         temp.g = 0;
@@ -65,9 +54,12 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         brave = false;
         defeat = false;
         timer = ros::Time::now();
+	moveOrderTimer = ros::Time::now() - ros::Duration(30);
         aggression = 6;
   
         obstacle = false;
+	
+	scrubbedScanReceived = false;
   
         startupSound = 22;
         fightStartSound = 23;
@@ -75,8 +67,6 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         winFightSound = 25;
         backToNormalSound = 26;
 
-  	/*Subscriber for the laser-based leg detector*/
-  	legSub = nh.subscribe("/legs", 1, &AssertiveBehaviour::legCallback, this);
   	/*If we're using the vicon, subscribe for our pose that way*/
   	if (viconMode == true)
   	{
@@ -85,30 +75,25 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
   	}
   	else
   	{
-  	    /*However else we're going to get our pose in non-vicon situations*/
+		goal_pub = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
+		cmdVelListenerSub = nh.subscribe("/listener/cmd_vel", 1, &AssertiveBehaviour::cmdVelListenerCallback, this);
+		humanMaximaSub = nh.subscribe("/human/local_maxima", 1, &AssertiveBehaviour::localMaximaCallback, this);
+		scrubbedScanSub = nh.subscribe("/scrubbed_laser", 1, &AssertiveBehaviour::scrubbedScanCallback, this);
   	}
   	laserSub = nh.subscribe("/scan", 1, &AssertiveBehaviour::laserCallback, this);
   	sonarSub = nh.subscribe("/sonar", 1, &AssertiveBehaviour::sonarCallback, this);
-	
 	cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 30);
-	gripper_pub = nh.advertise<p2os_driver::GripperState>("/gripper_control", 30);
+	gripper_pub = nh.advertise<p2os_msgs::GripperState>("/gripper_control", 30);
 	audio_pub = nh.advertise<std_msgs::UInt16>("/sound_player", 1, true);
-	led_pub = nh.advertise<autonomy_leds_msgs::LED>("/leds/set_led", 1);
-    keyframe_pub = nh.advertise<autonomy_leds_msgs::Keyframe>("/leds/display", 1);
-    
-    
+    	keyframe_pub = nh.advertise<autonomy_leds_msgs::Keyframe>("/leds/display", 1);
+    	
+
     
 	ROS_INFO("[ASSERTIVE_BEHAVIOUR] Initialized.");
 }
 
 AssertiveBehaviour::~AssertiveBehaviour() {
  	ROS_INFO("[ASSERTIVE_BEHAVIOUR] Destroyed.");
-}
-
-/*For the leg subscriber, extracting the data from the message.*/
-void AssertiveBehaviour::legCallback(const geometry_msgs::PoseArray legData) {
-    latestLegPoseArray = legData;
-    legReceived = true;
 }
 
 /*For the vicon subscriber, extracting the data from the message.*/
@@ -130,10 +115,33 @@ void AssertiveBehaviour::laserCallback(const sensor_msgs::LaserScan scanData) {
 
 /*For the sonar subscriber, extracting the data from the message.*/
 //void AssertiveBehaviour::sonarCallback(const p2os_driver::SonarArray::ConstPtr & sonarData) {
-void AssertiveBehaviour::sonarCallback(const p2os_driver::SonarArray sonarData) {
+void AssertiveBehaviour::sonarCallback(const p2os_msgs::SonarArray sonarData) {
     latestSonarScan = sonarData.ranges;
     sonarReceived = true;
 }
+
+void AssertiveBehaviour::cmdVelListenerCallback(const geometry_msgs::Twist navData)
+{
+	if (navigating == true)
+	{
+		cmd_vel_pub.publish(navData);
+	}
+}
+
+
+
+void AssertiveBehaviour::localMaximaCallback(const  geometry_msgs::PoseArray maximaData) {
+    humanMaximaArray = maximaData;
+    humanReceived = true;
+}
+
+
+void scrubbedScanCallback(const sensor_msgs::LaserScan scanData)
+{
+	scrubbedScan = scanData;
+	scrubbedScanReceived = true;
+}
+
 
 void AssertiveBehaviour::setLights(int setting)
 {
@@ -233,36 +241,33 @@ float AssertiveBehaviour::getDesiredAngle(float targetX, float targetY, float cu
 	{
 	    result -= 6.2831;
 	}
-	float yaw = tf::getYaw(latestPoses.transform.rotation);
+	//float yaw = tf::getYaw(latestPoses.transform.rotation);
 	/*The obstacle avoider checks if the desired angle is within front 180* arc and if so uses laser for obstacle avoiding. This could obviously cause problems if there's no open path forward*/
 	
 	
-	float adjustedDesired = result - yaw;
-        if (adjustedDesired > 3.14159)
-        {
-            adjustedDesired += -6.2831;
-        }
-        else if (adjustedDesired < -3.14159)
-        {
-            adjustedDesired += 6.2831;
-        }
+	//float adjustedDesired = result - yaw;
+        //if (adjustedDesired > 3.14159)
+        //{
+        //    adjustedDesired += -6.2831;
+        //}
+        //else if (adjustedDesired < -3.14159)
+        //{
+        //    adjustedDesired += 6.2831;
+        //}
         
 	//if ((((yaw > (result - 0.785)) && (yaw < (result + 0.785))) || (((yaw > 2.36) && (result < -2.36)) || ((yaw < -2.36) && (result > 2.36)))) && brave == false )
-	if (fabs(adjustedDesired) < 1.5795 && brave == false && destination == true)
+	/*if (fabs(adjustedDesired) < 1.5795 && brave == false && destination == true)
 	{
 	    ROS_INFO("[ASSERTIVE_BEHAVIOUR] Desired Before: %f", adjustedDesired);
 	    result = obstacleAvoider(result);
 	    ROS_INFO("[ASSERTIVE_BEHAVIOUR] Desired After: %f", adjustedDesired);
-	}
+	}*/
 	
 	return result;
 }
 
 float AssertiveBehaviour::obstacleAvoider(float desired)
 {
-
-    
-
       int laserStartIndex = 0;
       int laserWindowRadius = 20;
       //int laserWindowRadius2 = 50;
@@ -283,11 +288,8 @@ float AssertiveBehaviour::obstacleAvoider(float desired)
         {
             adjustedDesired += 6.2831;
         }
-		laserStartIndex = floor(adjustedDesired / 0.0174532) + 90;
-		
-		
-      
-      
+	laserStartIndex = floor(adjustedDesired / 0.0174532) + 90;
+		     
       while (failure == false)
       {
           /*for (int i = (laserStartIndex - laserWindowRadius); (i < (laserStartIndex + laserWindowRadius)) && i < 180; i++)
@@ -446,100 +448,152 @@ void AssertiveBehaviour::laserTest()
 /*TODO: This is using quaternions since I'm assuming vicon, might need to adjust.*/
 void AssertiveBehaviour::waypointing()
 {
-        float desiredX;
-        float desiredY;
-        float desiredAngle = 0;
-        /*Since the vicon bridge is giving us quaternions, we'll want to get our own yaw back out of it.*/
-        //float yaw = tf::getYaw(latestPoses.poses[0].orientation);
-        float yaw = tf::getYaw(latestPoses.transform.rotation);
-        if (returnTrip == false)
-        {
-            desiredX = goalX;
-            desiredY = goalY;
-        }
-        else
-        {
-            desiredX = startX;
-            desiredY = startY;
-        }
-        
-        
-        /*Check if you've arrived at your destination and should switch goals*/
-        if (fabs(latestPoses.transform.translation.x - desiredX) < 0.2 && fabs(latestPoses.transform.translation.y - desiredY) < 0.2)
-        {
-            ROS_INFO("[ASSERTIVE_BEHAVIOUR] FLIP DIRECTION");
-            returnTrip = !returnTrip;
-        }
-
-	/*Now we calculate the yaw we'd want from our current position to be driving toward the goal.*/
-		desiredAngle = getDesiredAngle(desiredX, desiredY, latestPoses.transform.translation.x, latestPoses.transform.translation.y, true);
-		if (desiredAngle < -3.5)
+	if (viconMode == true)
+	{
+		float desiredX;
+		float desiredY;
+		float desiredAngle = 0;
+		/*Since the vicon bridge is giving us quaternions, we'll want to get our own yaw back out of it.*/
+		//float yaw = tf::getYaw(latestPoses.poses[0].orientation);
+		float yaw = tf::getYaw(latestPoses.transform.rotation);
+		if (returnTrip == false)
 		{
-		    /*The laser test found the desired angle to be unreachable so it's already turning you*/
+		    desiredX = goalX;
+		    desiredY = goalY;
 		}
 		else
 		{
-		    float adjustedDesired = desiredAngle - yaw;
-            if (adjustedDesired > 3.14159)
-            {
-                adjustedDesired += -6.2831;
-            }
-            else if (adjustedDesired < -3.14159)
-            {
-                adjustedDesired += 6.2831;
-            }
-            
-            /*
+		    desiredX = startX;
+		    desiredY = startY;
+		}
 		
-		    if ((yaw > (desiredAngle - 0.20)) && (yaw < (desiredAngle + 0.20)) && (driving == true))
+		
+		/*Check if you've arrived at your destination and should switch goals*/
+		if (fabs(latestPoses.transform.translation.x - desiredX) < 0.2 && fabs(latestPoses.transform.translation.y - desiredY) < 0.2)
+		{
+		    ROS_INFO("[ASSERTIVE_BEHAVIOUR] FLIP DIRECTION");
+		    returnTrip = !returnTrip;
+		}
 
+		/*Now we calculate the yaw we'd want from our current position to be driving toward the goal.*/
+			desiredAngle = getDesiredAngle(desiredX, desiredY, latestPoses.transform.translation.x, latestPoses.transform.translation.y, true);
+			if (desiredAngle < -3.5)
+			{
+			    /*The laser test found the desired angle to be unreachable so it's already turning you*/
+			}
+			else
+			{
+			    float adjustedDesired = desiredAngle - yaw;
+		    if (adjustedDesired > 3.14159)
 		    {
-		        
-			    move_cmd.linear.x = 0.3;
-			    move_cmd.angular.z = 0.0;
+		        adjustedDesired += -6.2831;
 		    }
-		
-		    else if ((((yaw > 2.9) && (desiredAngle < -2.9)) || ((yaw < -2.9) && (desiredAngle > 2.9))) && (driving == true))
+		    else if (adjustedDesired < -3.14159)
 		    {
-			    move_cmd.linear.x = 0.3;
-			    move_cmd.angular.z = 0.0;
-		    }*/
-		
+		        adjustedDesired += 6.2831;
+		    }
+		    
 		    /*
-		    else if ((yaw > (desiredAngle - 0.15)) && (yaw < (desiredAngle + 0.15)) && (driving == false))
+		
+			    if ((yaw > (desiredAngle - 0.20)) && (yaw < (desiredAngle + 0.20)) && (driving == true))
 
-		    {
-			    move_cmd.linear.x = 0.3;
-			    move_cmd.angular.z = 0.0;
-			    driving = true;
-		    }
+			    {
+				
+				    move_cmd.linear.x = 0.3;
+				    move_cmd.angular.z = 0.0;
+			    }
+		
+			    else if ((((yaw > 2.9) && (desiredAngle < -2.9)) || ((yaw < -2.9) && (desiredAngle > 2.9))) && (driving == true))
+			    {
+				    move_cmd.linear.x = 0.3;
+				    move_cmd.angular.z = 0.0;
+			    }*/
+		
+			    /*
+			    else if ((yaw > (desiredAngle - 0.15)) && (yaw < (desiredAngle + 0.15)) && (driving == false))
 
-		    else if ((((yaw > 3) && (desiredAngle < -3)) || ((yaw < -3) && (desiredAngle > 3))) && (driving == false))
-		    {
-			    move_cmd.linear.x = 0.3;
-			    move_cmd.angular.z = 0.0;
-			    driving = true;
-		    }*/
-		    /*If we get here then the difference between our yaw and desired angle is too great, moving or not, seam or no seam, so start turning*/
-		    if (fabs(adjustedDesired) < 0.3 && driving == true)
-		    {
-		        move_cmd.linear.x = 0.3;
-			    move_cmd.angular.z = 0.0;
-		    }
-		    else if (fabs(adjustedDesired) < 0.2 && driving == false)
-		    {
-		            driving = true;
-		            move_cmd.linear.x = 0.3;
-			        move_cmd.angular.z = 0.0;
-		    }
-		    else
-		    {
-		        move_cmd.linear.x = 0.0;
-		        move_cmd.angular.z = 0.5 * adjustedDesired;
-			    driving = false;
-		    }
-		    cmd_vel_pub.publish(move_cmd);
-        }
+			    {
+				    move_cmd.linear.x = 0.3;
+				    move_cmd.angular.z = 0.0;
+				    driving = true;
+			    }
+
+			    else if ((((yaw > 3) && (desiredAngle < -3)) || ((yaw < -3) && (desiredAngle > 3))) && (driving == false))
+			    {
+				    move_cmd.linear.x = 0.3;
+				    move_cmd.angular.z = 0.0;
+				    driving = true;
+			    }*/
+			    /*If we get here then the difference between our yaw and desired angle is too great, moving or not, seam or no seam, so start turning*/
+			    if (fabs(adjustedDesired) < 0.3 && driving == true)
+			    {
+				move_cmd.linear.x = 0.3;
+				    move_cmd.angular.z = 0.0;
+			    }
+			    else if (fabs(adjustedDesired) < 0.2 && driving == false)
+			    {
+				    driving = true;
+				    move_cmd.linear.x = 0.3;
+					move_cmd.angular.z = 0.0;
+			    }
+			    else
+			    {
+				move_cmd.linear.x = 0.0;
+				move_cmd.angular.z = 0.5 * adjustedDesired;
+				    driving = false;
+			    }
+			    cmd_vel_pub.publish(move_cmd);
+		}
+	}
+	else
+	{
+		if (moveOrderTimer + ros::Duration(30) < ros::Time::now())
+		{
+			moveOrderTimer = ros::Time::now();
+			if (returnTrip == false)
+			{
+				std_msgs::Header tmpHead;
+				geometry_msgs::Pose tmpPose;
+				geometry_msgs::Point tmpPoint;
+				geometry_msgs::Quaternion tmpQuaternion;
+				tmpPoint.x = 5.0;
+				tmpPoint.y = 0.0;
+				tmpPoint.z = 0.0;
+				tmpQuaternion.x = 0.0;
+				tmpQuaternion.y = 0.0;
+				tmpQuaternion.z = 0.0;
+				tmpQuaternion.w = 1.0;
+				tmpPose.position = tmpPoint;
+				tmpPose.orientation = tmpQuaternion;
+				goal_cmd.pose =	tmpPose;
+				tmpHead.frame_id = "odom";
+				goal_cmd.header = tmpHead;
+				goal_pub.publish(goal_cmd);
+				returnTrip = true;
+			}
+			else
+			{
+				std_msgs::Header tmpHead;
+				geometry_msgs::Pose tmpPose;
+				geometry_msgs::Point tmpPoint;
+				geometry_msgs::Quaternion tmpQuaternion;
+				tmpPoint.x = -5.0;
+				tmpPoint.y = 0.0;
+				tmpPoint.z = 0.0;
+				tmpQuaternion.x = 0.0;
+				tmpQuaternion.y = 0.0;
+				tmpQuaternion.z = 0.0;
+				tmpQuaternion.w = 1.0;
+				tmpPose.position = tmpPoint;
+				tmpPose.orientation = tmpQuaternion;
+				goal_cmd.pose =	tmpPose;
+				tmpHead.frame_id = "odom";
+				goal_cmd.header = tmpHead;
+				goal_pub.publish(goal_cmd);
+				returnTrip = false;
+			}
+		}
+	}
 
 }
 
@@ -554,30 +608,6 @@ void AssertiveBehaviour::closeGripper()
     /*TODO: Check message format for this*/
     gripper_pub.publish(grip_cmd);
 }
-
-
-/*This function uses the leg detector to detect humans stopped in the front arc.*/
-/*Deprecated since I want to build a larger sensor-mediated function.*/
-/*void AssertiveBehaviour::legAhead()
-{
-    if (legReceived == true)
-    {
-        legWarning = false;
-        for (int i = 0; i < latestLegPoseArray.poses.size(); i++)
-        {
-            if (std::fabs(latestLegPoseArray.poses[i].position.x) < 0.4 && std::fabs(latestLegPoseArray.poses[i].position.y) < 0.4)
-            {
-                legWarning = true;
-                ROS_INFO("[ASSERTIVE_BEHAVIOUR] Forward leg reading: %f, %f.", latestLegPoseArray.poses[i].position.x, latestLegPoseArray.poses[i].position.y );
-            }
-        }
-        ROS_INFO("[ASSERTIVE_BEHAVIOUR] Forward leg reading: %d.", legWarning);
-    }
-    else
-    {
-        ROS_INFO("[ASSERTIVE_BEHAVIOUR] No leg data received");
-    }   
-}*/
 
 /*When this behaviour is being used with the vicon, this function detects if there is a human or robot subject in the robot's way using their vicon poses. This is an alternative to a sensor-mediated version.*/
 /*TODO: Even if I'm not using vicon data to control, I may want to be logging it all.*/
@@ -611,25 +641,52 @@ void AssertiveBehaviour::subjectAhead()
     }
     else
     {
-        /*TODO: Sensor-mediated detection using autonomy hri package modules*/
-        
-        if (legReceived == true)
-        {
-            legWarning = false;
-            for (int i = 0; i < latestLegPoseArray.poses.size(); i++)
-            {
-                if (std::fabs(latestLegPoseArray.poses[i].position.x) < 0.4 && std::fabs(latestLegPoseArray.poses[i].position.y) < 0.4)
-                {
-                    legWarning = true;
-                    ROS_INFO("[ASSERTIVE_BEHAVIOUR] Forward leg reading: %f, %f.", latestLegPoseArray.poses[i].position.x, latestLegPoseArray.poses[i].position.y );
-                }
-            }
-            ROS_INFO("[ASSERTIVE_BEHAVIOUR] Forward leg reading: %d.", legWarning);
-        }
-        else
-        {
-            ROS_INFO("[ASSERTIVE_BEHAVIOUR] No leg data received");
-        }   
+
+	/*if(humanReceived == true)
+	{
+		subjectDetected = false;
+		//humanGrid.info.origin.
+		for(int i = 0; i < humanMaximaArray.poses.size(); i++)
+		{
+			geometry_msgs::Point robotPosition;
+			robotPosition.x = 0;
+			robotPosition.y = 0;
+			robotPosition.z = 0;
+			float angleToSubject = getDesiredAngle(humanMaximaArray.poses[i].position.x, humanMaximaArray.poses[i].position.y, 0, 0, false);
+			float distanceToSubject = sqrt(pow((humanMaximaArray.poses[i].position.x - robotPosition.x), 2) + pow((humanMaximaArray.poses[i].position.y - robotPosition.y), 2));
+			
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Angle to subject: %f, distance to subject: %f", angleToSubject, distanceToSubject);
+			if(distanceToSubject < 2.0 && (angleToSubject > -0.3 && angleToSubject < 0.3))
+			{
+				subjectDetected = true;
+			}
+		}
+	}*/
+	if(scrubbedScanReceived == true)
+	{
+		int threshold = 1;
+		int counter = 0;
+		subjectDetected = false;
+		for(int i = 0; i < scrubbedScan.ranges.size(); i++)
+		{
+			float allowedDistance = 0.5;
+			if (scrubbedScan.ranges[i] < allowedDistance)
+			{
+				counter++;
+			}
+		}
+		if (counter >= threshold)
+		{
+			subjectDetected = true;
+		}
+	}
+	else
+	{
+		subjectDetected = false; 
+		ROS_INFO("[ASSERTIVE_BEHAVIOUR] No human detections received");
+	}
+
+
     }
 }
 
@@ -640,7 +697,7 @@ void AssertiveBehaviour::reverseClearance()
 {
     if (sonarReceived == true)
     {
-        if(latestSonarScan[8] > 0.5 && latestSonarScan[9] > 0.5 && latestSonarScan[10] > 0.5)
+        if(latestSonarScan[8] > 1.0 && latestSonarScan[9] > 1.0 && latestSonarScan[10] > 1.0)
         {
             behindRightClear = true;
         }
@@ -648,7 +705,7 @@ void AssertiveBehaviour::reverseClearance()
         {
             behindRightClear = false;
         }
-        if(latestSonarScan[13] > 0.5 && latestSonarScan[14] > 0.5 && latestSonarScan[15] > 0.5)
+        if(latestSonarScan[13] > 1.0 && latestSonarScan[14] > 1.0 && latestSonarScan[15] > 1.0)
         {
             behindLeftClear = true;
         }
@@ -656,7 +713,7 @@ void AssertiveBehaviour::reverseClearance()
         {
             behindLeftClear = false;
         }
-        if(latestSonarScan[11] > 0.5 && latestSonarScan[12] > 0.5)
+        if(latestSonarScan[11] > 1.0 && latestSonarScan[12] > 1.0)
         {
             behindMiddleClear = true;
         }
@@ -667,7 +724,7 @@ void AssertiveBehaviour::reverseClearance()
     }
     else
     {
-    
+    	ROS_INFO("[ASSERTIVE_BEHAVIOUR] No sonar received");
     }
 }
 
@@ -710,7 +767,7 @@ void AssertiveBehaviour::fightingBehaviour()
        {
             timer = ros::Time::now();
        }
-       else if (subjectDetected == false && (timer + ros::Duration(3) < ros::Time::now()))
+       else if (subjectDetected == false && (timer + ros::Duration(4) < ros::Time::now()))
        {
             audio_cmd.data = backToNormalSound;
             audio_pub.publish(audio_cmd);
@@ -749,7 +806,8 @@ void AssertiveBehaviour::fightingBehaviour()
                 }
                 else
                 {
-                    /*TODO: Get the relevant distances from sensor detection*/
+                    	initialX = 0;
+			initialY = 0;
                 
                 }
             }
@@ -762,7 +820,25 @@ void AssertiveBehaviour::fightingBehaviour()
             }
             else
             {
-                /*TODO: Get the relevant distances from sensor detection*/
+                distInitial = sqrt(pow(( - initialX), 2) + pow((latestPoses.transform.translation.y - initialY), 2));
+                    /*How far are you now?*/
+                distCurrent = 10000;
+		
+		for(int i = 0; i < humanMaximaArray.poses.size(); i++)
+		{
+			float angleToSubject = getDesiredAngle(humanMaximaArray.poses[i].position.x, humanMaximaArray.poses[i].position.y, 0, 0, false);
+			float distanceToSubject = sqrt(pow((humanMaximaArray.poses[i].position.x), 2) + pow((humanMaximaArray.poses[i].position.y), 2));
+			if(angleToSubject > -0.3 && angleToSubject < 0.3)
+			{
+				float tempDistCurrent = sqrt(pow(humanMaximaArray.poses[i].position.x, 2) + pow(humanMaximaArray.poses[i].position.y, 2));
+				if (tempDistCurrent < distCurrent)
+				{
+					distCurrent = tempDistCurrent;
+				}
+			}
+		}
+
+
             }
             
             
@@ -863,18 +939,17 @@ void AssertiveBehaviour::navigatingBehaviour()
 
     if (((viconMode == true && poseReceived == true) || (viconMode == false)) && laserReceived == true)
     {
-        //ROS_INFO("[ASSERTIVE_BEHAVIOUR] Vicon mode");
-        viconSubjectAhead();
+        subjectAhead();
         /*If someone is newly detected ahead of you, a fight starts*/
         if (subjectDetected == true  && brave == false)
         {
+		navigating = false;
             move_cmd.linear.x = -0.5;
             move_cmd.angular.z = 0.0;
-            cmd_vel_pub.publish(move_cmd);
-            navigating = false;
+            cmd_vel_pub.publish(move_cmd);            
             fighting = true;
             timer = ros::Time::now();
-            
+            moveOrderTimer = ros::Time::now();
             audio_cmd.data = fightStartSound;
             audio_pub.publish(audio_cmd);
             setLights(fightStartLights);

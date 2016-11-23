@@ -6,20 +6,24 @@
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Point.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <std_msgs/Empty.h>
-#include <p2os_driver/GripperState.h>
+#include <p2os_msgs/GripperState.h>
 #include <std_msgs/Float32.h>
-#include <p2os_driver/SonarArray.h>
+#include <p2os_msgs/SonarArray.h>
 #include <std_msgs/UInt16.h>
 #include <std_msgs/ColorRGBA.h>
-#include <autonomy_leds_msgs/LED.h>
 #include <autonomy_leds_msgs/Keyframe.h>
 #include <vector>
 #include <unistd.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/MapMetaData.h>
+#include <move_base_msgs/MoveBaseGoal.h>
+
 
 #define PI 3.14159
 #define TWO_PI 6.283185*/
@@ -28,10 +32,14 @@ class AssertiveBehaviour {
 private:
 
 	ros::Time timer;
+	ros::Time moveOrderTimer;
     bool panicking;
     bool fighting;
     bool navigating;
     bool driving;
+
+
+	sensor_msgs::LaserScan scrubbedScan;
     /*This stores the latest laser scan's 180 ranges*/
 	std::vector<float> latestLaserScan;
 	/*This stores the latest sonar scan's 16 ranges*/
@@ -39,14 +47,13 @@ private:
 	/*These bools confirm that the laser and sonar are transmitting, so that they won't be used unless these are triggered.*/
     bool laserReceived;
     bool sonarReceived;
-    /*This stores the results of the latest leg detection sweep*/
-    geometry_msgs::PoseArray latestLegPoseArray;
     geometry_msgs::TransformStamped latestPoses;
     geometry_msgs::TransformStamped latestSubjectPoses;
-    bool legReceived;
-    /*This bool reports whether legs have been detected close to the front arc, risking collision.*/
-    bool legWarning;
+
     
+	geometry_msgs::PoseArray humanMaximaArray;
+
+
     /*These bools are set according to rear sonar readings and used when deciding how to back away.*/
     bool behindRightClear;
     bool behindLeftClear;
@@ -80,6 +87,9 @@ private:
     
     bool defeat;	
     float aggression;
+
+	//move_base_msgs::MoveBaseGoal goal_cmd;
+	geometry_msgs::PoseStamped goal_cmd;
     
     
     /*Set these to whichever sound_player values for different sounds you want and they play at the appropriate times*/
@@ -100,20 +110,26 @@ private:
     
     bool fightStarting;
 
-  	/*This callback is for the leg detector using laser data*/
-  	void legCallback(const geometry_msgs::PoseArray legData);
+
+	bool humanReceived;
+
+	bool scrubbedScanReceived;
+
+
   	void viconCallback(const geometry_msgs::TransformStamped::ConstPtr& pose);
   	void viconSubjectCallback(const geometry_msgs::TransformStamped::ConstPtr& pose);
   	void laserCallback(const sensor_msgs::LaserScan scanData);
-  	void sonarCallback(const p2os_driver::SonarArray sonarData);
-  	
-	
+  	void sonarCallback(const p2os_msgs::SonarArray sonarData);
+	void cmdVelListenerCallback(const geometry_msgs::Twist navData);
+	void localMaximaCallback(const geometry_msgs::PoseArray maximaData);
+	void scrubbedScanCallback(const sensor_msgs::LaserScan scanData);
+
+
 	void navigatingBehaviour();
 	void fightingBehaviour();
 	void panickingBehaviour();
 	void openGripper();
 	void closeGripper();
-	//void legAhead();
 	void waypointing();
 	float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn, bool destination);
 	void reverseClearance();
@@ -133,24 +149,23 @@ protected:
 	ros::Publisher gripper_pub;
 	/*Publisher that says what sounds to play*/
 	ros::Publisher audio_pub;
-	/*Publisher to set the LEDs manually*/
-	ros::Publisher led_pub;
 	/*Publisher to set the LEDs via keyframe*/
 	ros::Publisher keyframe_pub;
+	/*Publisher to set the movement goal*/
+	ros::Publisher goal_pub;
 	
+
+
 	/*Movement orders for Pioneer*/
 	geometry_msgs::Twist move_cmd;
     /*An audio request*/
     std_msgs::UInt16 audio_cmd;
     /*A gripper command*/
-    p2os_driver::GripperState grip_cmd;
-    /*An LED command*/
-	autonomy_leds_msgs::LED led_cmd;
+    p2os_msgs::GripperState grip_cmd;
 	/*A single keyframe which can be used to set the leds different colours. Kept simple instead of animated for now.*/
     autonomy_leds_msgs::Keyframe lights;
 	
- 	/*Subscriber for the leg detection from laser scans*/
- 	ros::Subscriber legSub;
+ 
  	/*Subscriber for vicon-derived pose*/
  	ros::Subscriber poseSub;
  	/*Subscriber for vicon-derived subject's pose*/
@@ -159,6 +174,13 @@ protected:
  	ros::Subscriber laserSub;
  	/*Subscriber for raw sonar data*/
  	ros::Subscriber sonarSub;
+
+
+	ros::Subscriber humanMaximaSub;
+
+	ros::Subscriber cmdVelListenerSub;
+	ros::Subscriber scrubbedScanSub;
+
  	
 public:
   AssertiveBehaviour(ros::NodeHandle& nh);
