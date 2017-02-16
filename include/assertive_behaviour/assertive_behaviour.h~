@@ -21,9 +21,10 @@
 #include <vector>
 #include <unistd.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Odometry.h>
 #include <nav_msgs/MapMetaData.h>
 #include <move_base_msgs/MoveBaseGoal.h>
-
+#include <rosgraph_msgs/Clock.h>
 
 #define PI 3.14159
 #define TWO_PI 6.283185*/
@@ -33,6 +34,7 @@ private:
 
 	ros::Time timer;
 	ros::Time moveOrderTimer;
+	rosgraph_msgs::Clock clockTime;
     bool panicking;
     bool fighting;
     bool navigating;
@@ -47,13 +49,16 @@ private:
 	/*These bools confirm that the laser and sonar are transmitting, so that they won't be used unless these are triggered.*/
     bool laserReceived;
     bool sonarReceived;
-    /*This stores the results of the latest leg detection sweep*/
-    //geometry_msgs::PoseArray latestLegPoseArray;
     geometry_msgs::TransformStamped latestPoses;
     geometry_msgs::TransformStamped latestSubjectPoses;
-    //bool legReceived;
-    /*This bool reports whether legs have been detected close to the front arc, risking collision.*/
-    //bool legWarning;
+
+
+	std::string poseTopic;
+	std::string scrubbedLaserTopic;
+	std::string cmdVelTopic;
+	std::string scanTopic;
+
+
     
 	geometry_msgs::PoseArray humanMaximaArray;
 
@@ -80,10 +85,10 @@ private:
  	
     float startX;
     float startY;
-
+	
     float goalX;
     float goalY;
-        
+        int toleranceThreshold;
     bool subjectDetected;
     
     float initialX;
@@ -91,6 +96,8 @@ private:
     
     bool defeat;	
     float aggression;
+
+	nav_msgs::Odometry stagePose;
 
 	//move_base_msgs::MoveBaseGoal goal_cmd;
 	geometry_msgs::PoseStamped goal_cmd;
@@ -114,31 +121,28 @@ private:
     
     bool fightStarting;
 
+	bool stageMode;
 
-	nav_msgs::OccupancyGrid humanGrid;
 	bool humanReceived;
 
 	bool scrubbedScanReceived;
+	bool clockReceived;
 
-
-  	/*This callback is for the leg detector using laser data*/
-  	//void legCallback(const geometry_msgs::PoseArray legData);
   	void viconCallback(const geometry_msgs::TransformStamped::ConstPtr& pose);
+  	void stagePoseCallback(const nav_msgs::Odometry::ConstPtr& pose);
   	void viconSubjectCallback(const geometry_msgs::TransformStamped::ConstPtr& pose);
   	void laserCallback(const sensor_msgs::LaserScan scanData);
   	void sonarCallback(const p2os_msgs::SonarArray sonarData);
-  	//void humanGridCallback(const nav_msgs::OccupancyGrid humanData);
 	void cmdVelListenerCallback(const geometry_msgs::Twist navData);
 	void localMaximaCallback(const geometry_msgs::PoseArray maximaData);
 	void scrubbedScanCallback(const sensor_msgs::LaserScan scanData);
-
+	void clockCallback(const rosgraph_msgs::Clock clockData);
 
 	void navigatingBehaviour();
 	void fightingBehaviour();
 	void panickingBehaviour();
 	void openGripper();
 	void closeGripper();
-	//void legAhead();
 	void waypointing();
 	float getDesiredAngle(float targetX, float targetY, float currentXCoordinateIn, float currentYCoordinateIn, bool destination);
 	void reverseClearance();
@@ -174,8 +178,7 @@ protected:
 	/*A single keyframe which can be used to set the leds different colours. Kept simple instead of animated for now.*/
     autonomy_leds_msgs::Keyframe lights;
 	
- 	/*Subscriber for the leg detection from laser scans*/
- 	//ros::Subscriber legSub;
+ 
  	/*Subscriber for vicon-derived pose*/
  	ros::Subscriber poseSub;
  	/*Subscriber for vicon-derived subject's pose*/
@@ -185,12 +188,13 @@ protected:
  	/*Subscriber for raw sonar data*/
  	ros::Subscriber sonarSub;
 
-	//ros::Subscriber humanGridSub;
 
 	ros::Subscriber humanMaximaSub;
 
 	ros::Subscriber cmdVelListenerSub;
 	ros::Subscriber scrubbedScanSub;
+
+	ros::Subscriber clockSub;
 
  	
 public:

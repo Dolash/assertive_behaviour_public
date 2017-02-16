@@ -7,6 +7,19 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
 
         privNh.param<double>("loop_hz", loopHz, 30);
         
+privNh.param<bool>("vicon_mode", viconMode, false);
+privNh.param<bool>("stage_mode", stageMode, true);
+
+	privNh.param<std::string>("pose_topic", poseTopic, "/pose");
+	privNh.param<std::string>("scrubbed_scan_topic", scrubbedLaserTopic, "/scrubbed_scan");
+	privNh.param<std::string>("cmd_vel_topic", cmdVelTopic, "/cmd_vel");
+	privNh.param<std::string>("scan_topic", scanTopic, "/scan");
+
+	privNh.param<float>("start_x", startX, 1);
+privNh.param<float>("start_y", startY, 1);
+privNh.param<float>("end_x", goalX, 1);
+privNh.param<float>("end_y", goalY, 2);
+privNh.param<int>("detection_tolerance", toleranceThreshold, 4);
         panicking = false;
         fighting = false;
         navigating = true;
@@ -18,18 +31,11 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         behindRightClear = false;
         behindLeftClear = false;
         behindMiddleClear = false;
-        viconMode = false;
 	humanReceived = false;
         fightStarting = false;
         firstTime = false;
-
-
-	/*for Vicon mode*/
-        startX = 1.53;
-        startY = -2.9;
-        goalX = -1.47;
-        goalY = -2.9;
-        
+	clockReceived = false;
+      
         startupLights = 0;
         fightStartLights = 1;
         loseFightLights = 2;
@@ -53,10 +59,13 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         
         brave = false;
         defeat = false;
-        timer = ros::Time::now();
-	moveOrderTimer = ros::Time::now() - ros::Duration(30);
-        aggression = 6;
-  
+	if(stageMode == false)
+	{
+        	timer = ros::Time::now();
+		moveOrderTimer = ros::Time::now() - ros::Duration(30);
+	}        
+	aggression = 9;
+  	distInitial = 10;
         obstacle = false;
 	
 	scrubbedScanReceived = false;
@@ -67,28 +76,34 @@ AssertiveBehaviour::AssertiveBehaviour(ros::NodeHandle& nh)
         winFightSound = 25;
         backToNormalSound = 26;
 
+
   	/*If we're using the vicon, subscribe for our pose that way*/
   	if (viconMode == true)
   	{
   	    poseSub = nh.subscribe("/global_poses", 1, &AssertiveBehaviour::viconCallback, this);
   	    subjectPoseSub = nh.subscribe("/vicon/subject/subject", 1, &AssertiveBehaviour::viconSubjectCallback, this);
   	}
+	else if (stageMode == true)
+	{
+		poseSub = nh.subscribe(poseTopic, 1, &AssertiveBehaviour::stagePoseCallback, this);
+		scrubbedScanSub = nh.subscribe(scrubbedLaserTopic, 1, &AssertiveBehaviour::scrubbedScanCallback, this);
+	}
   	else
   	{
 		goal_pub = nh.advertise<geometry_msgs::PoseStamped>("/move_base_simple/goal", 1);
 		cmdVelListenerSub = nh.subscribe("/listener/cmd_vel", 1, &AssertiveBehaviour::cmdVelListenerCallback, this);
-		humanMaximaSub = nh.subscribe("/human/local_maxima", 1, &AssertiveBehaviour::localMaximaCallback, this);
-		scrubbedScanSub = nh.subscribe("/scrubbed_scan", 1, &AssertiveBehaviour::scrubbedScanCallback, this);
+	//	humanMaximaSub = nh.subscribe("/human/local_maxima", 1, &AssertiveBehaviour::localMaximaCallback, this);
+		scrubbedScanSub = nh.subscribe(scrubbedLaserTopic, 1, &AssertiveBehaviour::scrubbedScanCallback, this);
   	}
-  	laserSub = nh.subscribe("/scan", 1, &AssertiveBehaviour::laserCallback, this);
+  	laserSub = nh.subscribe(scanTopic, 1, &AssertiveBehaviour::laserCallback, this);
   	sonarSub = nh.subscribe("/sonar", 1, &AssertiveBehaviour::sonarCallback, this);
-	cmd_vel_pub = nh.advertise<geometry_msgs::Twist>("/cmd_vel", 30);
+	cmd_vel_pub = nh.advertise<geometry_msgs::Twist>(cmdVelTopic, 30);
 	gripper_pub = nh.advertise<p2os_msgs::GripperState>("/gripper_control", 30);
 	audio_pub = nh.advertise<std_msgs::UInt16>("/sound_player", 1, true);
     	keyframe_pub = nh.advertise<autonomy_leds_msgs::Keyframe>("/leds/display", 1);
     	
 
-    
+    clockSub = nh.subscribe("/clock", 1, &AssertiveBehaviour::clockCallback, this);
 	ROS_INFO("[ASSERTIVE_BEHAVIOUR] Initialized.");
 }
 
@@ -102,13 +117,21 @@ void AssertiveBehaviour::viconCallback(const geometry_msgs::TransformStamped::Co
     poseReceived = true;
 }
 
+void AssertiveBehaviour::stagePoseCallback(const nav_msgs::Odometry::ConstPtr& pose) {
+    stagePose = *pose;
+	//ROS_INFO("[ASSERTIVE_BEHAVIOUR] stage pose.");
+    poseReceived = true;
+}
+
 /*For the vicon subscriber for the subject, extracting the data from the message.*/
 void AssertiveBehaviour::viconSubjectCallback(const geometry_msgs::TransformStamped::ConstPtr& pose) {
+
     latestSubjectPoses = *pose;
 }
 
 /*For the laser subscriber, extracting the data from the message.*/
 void AssertiveBehaviour::laserCallback(const sensor_msgs::LaserScan scanData) {
+	//ROS_INFO("[ASSERTIVE_BEHAVIOUR] laser scan.");
     latestLaserScan = scanData.ranges;
     laserReceived = true;
 }
@@ -117,7 +140,7 @@ void AssertiveBehaviour::laserCallback(const sensor_msgs::LaserScan scanData) {
 //void AssertiveBehaviour::sonarCallback(const p2os_driver::SonarArray::ConstPtr & sonarData) {
 void AssertiveBehaviour::sonarCallback(const p2os_msgs::SonarArray sonarData) {
     latestSonarScan = sonarData.ranges;
-    sonarReceived = true;
+   sonarReceived = true;
 }
 
 void AssertiveBehaviour::cmdVelListenerCallback(const geometry_msgs::Twist navData)
@@ -131,17 +154,25 @@ void AssertiveBehaviour::cmdVelListenerCallback(const geometry_msgs::Twist navDa
 
 
 void AssertiveBehaviour::localMaximaCallback(const  geometry_msgs::PoseArray maximaData) {
-    humanMaximaArray = maximaData;
-    humanReceived = true;
+   humanMaximaArray = maximaData;
+   humanReceived = true;
 }
 
 
-void scrubbedScanCallback(const sensor_msgs::LaserScan scanData)
+void AssertiveBehaviour::scrubbedScanCallback(const sensor_msgs::LaserScan scanData)
 {
 	scrubbedScan = scanData;
+	//ROS_INFO("[ASSERTIVE_BEHAVIOUR] scrubbed scan.");
 	scrubbedScanReceived = true;
 }
 
+
+void AssertiveBehaviour::clockCallback(const rosgraph_msgs::Clock clockData)
+{
+	clockTime = clockData;
+	//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Clock.");
+	clockReceived = true;
+}
 
 void AssertiveBehaviour::setLights(int setting)
 {
@@ -206,10 +237,20 @@ void AssertiveBehaviour::setLights(int setting)
         lights.pattern_repeat = 10;
         for (int i = 0; i < 1; i++)
         {
-            lights.color_pattern[i].r = 0;
-            lights.color_pattern[i].g = 0;
-            lights.color_pattern[i].b = 1;
-            lights.color_pattern[i].a = 0;
+		if (returnTrip == true)
+		{
+            		lights.color_pattern[i].r = 0;
+            		lights.color_pattern[i].g = 0;
+            		lights.color_pattern[i].b = 1;
+            		lights.color_pattern[i].a = 0;
+		}
+		else
+		{
+			lights.color_pattern[i].r = 1;
+           	 	lights.color_pattern[i].g = 1;
+            		lights.color_pattern[i].b = 0;
+            		lights.color_pattern[i].a = 0;
+		}
         }
     }
     keyframe_pub.publish(lights);
@@ -448,102 +489,136 @@ void AssertiveBehaviour::laserTest()
 /*TODO: This is using quaternions since I'm assuming vicon, might need to adjust.*/
 void AssertiveBehaviour::waypointing()
 {
-	if (viconMode == true)
+	if (viconMode == true || stageMode == true)
 	{
 		float desiredX;
 		float desiredY;
 		float desiredAngle = 0;
 		/*Since the vicon bridge is giving us quaternions, we'll want to get our own yaw back out of it.*/
 		//float yaw = tf::getYaw(latestPoses.poses[0].orientation);
-		float yaw = tf::getYaw(latestPoses.transform.rotation);
-		if (returnTrip == false)
+		float yaw;		
+		if (viconMode == true)
 		{
-		    desiredX = goalX;
-		    desiredY = goalY;
-		}
-		else
-		{
-		    desiredX = startX;
-		    desiredY = startY;
-		}
-		
-		
-		/*Check if you've arrived at your destination and should switch goals*/
-		if (fabs(latestPoses.transform.translation.x - desiredX) < 0.2 && fabs(latestPoses.transform.translation.y - desiredY) < 0.2)
-		{
-		    ROS_INFO("[ASSERTIVE_BEHAVIOUR] FLIP DIRECTION");
-		    returnTrip = !returnTrip;
-		}
-
-		/*Now we calculate the yaw we'd want from our current position to be driving toward the goal.*/
-			desiredAngle = getDesiredAngle(desiredX, desiredY, latestPoses.transform.translation.x, latestPoses.transform.translation.y, true);
-			if (desiredAngle < -3.5)
+			yaw = tf::getYaw(latestPoses.transform.rotation);
+			if (fabs(latestPoses.transform.translation.x - desiredX) < 0.2 && fabs(latestPoses.transform.translation.y - desiredY) < 0.2)
 			{
-			    /*The laser test found the desired angle to be unreachable so it's already turning you*/
+		    		ROS_INFO("[ASSERTIVE_BEHAVIOUR] FLIP DIRECTION");
+				returnTrip = !returnTrip;
+			}
+			if (returnTrip == false)
+			{
+			    desiredX = goalX;
+			    desiredY = goalY;
 			}
 			else
 			{
-			    float adjustedDesired = desiredAngle - yaw;
-		    if (adjustedDesired > 3.14159)
-		    {
-		        adjustedDesired += -6.2831;
-		    }
-		    else if (adjustedDesired < -3.14159)
-		    {
-		        adjustedDesired += 6.2831;
-		    }
+			    desiredX = startX;
+			    desiredY = startY;
+			}
+			desiredAngle = getDesiredAngle(desiredX, desiredY, latestPoses.transform.translation.x, latestPoses.transform.translation.y, true);
+		}
+		else
+		{
+			yaw = tf::getYaw(stagePose.pose.pose.orientation);
+			if (fabs(stagePose.pose.pose.position.x - desiredX) < 0.2 && fabs(stagePose.pose.pose.position.y - desiredY) < 0.2)
+			{
+		    		ROS_INFO("[ASSERTIVE_BEHAVIOUR] FLIP DIRECTION");
+				returnTrip = !returnTrip;
+			}
+			if (returnTrip == false)
+			{
+			    desiredX = goalX;
+			    desiredY = goalY;
+			}
+			else
+			{
+			    desiredX = startX;
+			    desiredY = startY;
+			}
+			desiredAngle = getDesiredAngle(desiredX, desiredY, stagePose.pose.pose.position.x, stagePose.pose.pose.position.y, true);
+		}		
+		
+		
+		
+		/*Check if you've arrived at your destination and should switch goals*/
+		
+		
+
+
+
+		/*Now we calculate the yaw we'd want from our current position to be driving toward the goal.*/
+			
+			/*TODO this messy spot might be wrong*/
+			float adjustedDesired = desiredAngle - yaw;
+			//if (desiredAngle < -3.5)
+			//{
+			    /*The laser test found the desired angle to be unreachable so it's already turning you*/
+			//}
+			
+			//else
+			//{
+			    
+				if (adjustedDesired > 3.14159)
+				{
+					adjustedDesired += -6.2831;
+			    	}
+				else if (adjustedDesired < -3.14159)
+				{
+					adjustedDesired += 6.2831;
+				}
+			//}
+			
 		    
 		    /*
 		
-			    if ((yaw > (desiredAngle - 0.20)) && (yaw < (desiredAngle + 0.20)) && (driving == true))
+		    if ((yaw > (desiredAngle - 0.20)) && (yaw < (desiredAngle + 0.20)) && (driving == true))
 
-			    {
-				
-				    move_cmd.linear.x = 0.3;
-				    move_cmd.angular.z = 0.0;
-			    }
-		
-			    else if ((((yaw > 2.9) && (desiredAngle < -2.9)) || ((yaw < -2.9) && (desiredAngle > 2.9))) && (driving == true))
-			    {
-				    move_cmd.linear.x = 0.3;
-				    move_cmd.angular.z = 0.0;
-			    }*/
-		
-			    /*
-			    else if ((yaw > (desiredAngle - 0.15)) && (yaw < (desiredAngle + 0.15)) && (driving == false))
+		    {
+			
+			    move_cmd.linear.x = 0.3;
+			    move_cmd.angular.z = 0.0;
+		    }
+	
+		    else if ((((yaw > 2.9) && (desiredAngle < -2.9)) || ((yaw < -2.9) && (desiredAngle > 2.9))) && (driving == true))
+		    {
+			    move_cmd.linear.x = 0.3;
+			    move_cmd.angular.z = 0.0;
+		    }*/
+	
+		    /*
+		    else if ((yaw > (desiredAngle - 0.15)) && (yaw < (desiredAngle + 0.15)) && (driving == false))
 
-			    {
-				    move_cmd.linear.x = 0.3;
-				    move_cmd.angular.z = 0.0;
-				    driving = true;
-			    }
+		    {
+			    move_cmd.linear.x = 0.3;
+			    move_cmd.angular.z = 0.0;
+			    driving = true;
+		    }
 
-			    else if ((((yaw > 3) && (desiredAngle < -3)) || ((yaw < -3) && (desiredAngle > 3))) && (driving == false))
-			    {
-				    move_cmd.linear.x = 0.3;
-				    move_cmd.angular.z = 0.0;
-				    driving = true;
-			    }*/
-			    /*If we get here then the difference between our yaw and desired angle is too great, moving or not, seam or no seam, so start turning*/
-			    if (fabs(adjustedDesired) < 0.3 && driving == true)
-			    {
-				move_cmd.linear.x = 0.3;
-				    move_cmd.angular.z = 0.0;
-			    }
-			    else if (fabs(adjustedDesired) < 0.2 && driving == false)
-			    {
-				    driving = true;
-				    move_cmd.linear.x = 0.3;
-					move_cmd.angular.z = 0.0;
-			    }
-			    else
-			    {
-				move_cmd.linear.x = 0.0;
-				move_cmd.angular.z = 0.5 * adjustedDesired;
-				    driving = false;
-			    }
-			    cmd_vel_pub.publish(move_cmd);
-		}
+		    else if ((((yaw > 3) && (desiredAngle < -3)) || ((yaw < -3) && (desiredAngle > 3))) && (driving == false))
+		    {
+			    move_cmd.linear.x = 0.3;
+			    move_cmd.angular.z = 0.0;
+			    driving = true;
+		    }*/
+		    /*If we get here then the difference between our yaw and desired angle is too great, moving or not, seam or no seam, so start turning*/
+		    if (fabs(adjustedDesired) < 0.3 && driving == true)
+		    {
+			move_cmd.linear.x = 0.3;
+			    move_cmd.angular.z = 0.0;
+		    }
+		    else if (fabs(adjustedDesired) < 0.2 && driving == false)
+		    {
+			    driving = true;
+			    move_cmd.linear.x = 0.3;
+				move_cmd.angular.z = 0.0;
+		    }
+		    else
+		    {
+			move_cmd.linear.x = 0.0;
+			move_cmd.angular.z = 0.5 * adjustedDesired;
+			    driving = false;
+		    }
+		    cmd_vel_pub.publish(move_cmd);
 	}
 	else
 	{
@@ -556,8 +631,8 @@ void AssertiveBehaviour::waypointing()
 				geometry_msgs::Pose tmpPose;
 				geometry_msgs::Point tmpPoint;
 				geometry_msgs::Quaternion tmpQuaternion;
-				tmpPoint.x = 5.0;
-				tmpPoint.y = 0.0;
+				tmpPoint.x = startX;
+				tmpPoint.y = startY;
 				tmpPoint.z = 0.0;
 				tmpQuaternion.x = 0.0;
 				tmpQuaternion.y = 0.0;
@@ -566,10 +641,11 @@ void AssertiveBehaviour::waypointing()
 				tmpPose.position = tmpPoint;
 				tmpPose.orientation = tmpQuaternion;
 				goal_cmd.pose =	tmpPose;
-				tmpHead.frame_id = "odom";
+				tmpHead.frame_id = "map";
 				goal_cmd.header = tmpHead;
 				goal_pub.publish(goal_cmd);
 				returnTrip = true;
+				setLights(backToNormalLights);
 			}
 			else
 			{
@@ -577,8 +653,8 @@ void AssertiveBehaviour::waypointing()
 				geometry_msgs::Pose tmpPose;
 				geometry_msgs::Point tmpPoint;
 				geometry_msgs::Quaternion tmpQuaternion;
-				tmpPoint.x = -5.0;
-				tmpPoint.y = 0.0;
+				tmpPoint.x = goalX;
+				tmpPoint.y = goalY;
 				tmpPoint.z = 0.0;
 				tmpQuaternion.x = 0.0;
 				tmpQuaternion.y = 0.0;
@@ -587,10 +663,11 @@ void AssertiveBehaviour::waypointing()
 				tmpPose.position = tmpPoint;
 				tmpPose.orientation = tmpQuaternion;
 				goal_cmd.pose =	tmpPose;
-				tmpHead.frame_id = "odom";
+				tmpHead.frame_id = "map";
 				goal_cmd.header = tmpHead;
 				goal_pub.publish(goal_cmd);
 				returnTrip = false;
+				setLights(backToNormalLights);
 			}
 		}
 	}
@@ -664,20 +741,26 @@ void AssertiveBehaviour::subjectAhead()
 	}*/
 	if(scrubbedScanReceived == true)
 	{
-		int threshold = 1;
 		int counter = 0;
 		subjectDetected = false;
+		
 		for(int i = 0; i < scrubbedScan.ranges.size(); i++)
 		{
-			float allowedDistance = 0.5;
-			if (scrubbedScan.ranges[i] < allowedDistance)
+			float allowedDistance = 0.75 + (1.00 - (1.00*(fabs(90 - i)/90)));
+			if (scrubbedScan.ranges[i] < allowedDistance && scrubbedScan.ranges[i] != 0.00)
 			{
+				ROS_INFO("[ASSERTIVE_BEHAVIOUR]allowed distance: %f detection at: %f detection laser is: %d", allowedDistance, scrubbedScan.ranges[i], i);
 				counter++;
+				if (navigating == true && (scrubbedScan.ranges[i] - allowedDistance) < distInitial)
+				{
+					distInitial = scrubbedScan.ranges[i] - allowedDistance;
+				}
 			}
 		}
-		if (counter >= threshold)
+		if (counter >= toleranceThreshold)
 		{
 			subjectDetected = true;
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] HUMAN DETECTED");
 		}
 	}
 	else
@@ -724,6 +807,9 @@ void AssertiveBehaviour::reverseClearance()
     }
     else
     {
+	behindRightClear = true;
+	behindLeftClear = true;
+	behindMiddleClear = true;
     	ROS_INFO("[ASSERTIVE_BEHAVIOUR] No sonar received");
     }
 }
@@ -735,6 +821,15 @@ void AssertiveBehaviour::fightingBehaviour()
     ROS_INFO("[ASSERTIVE_BEHAVIOUR] FIGHTING");
     /*TODO: Set good cmd_vel values when retreating*/
     /*First check if you've lost the fight and if so get out of the way*/
+	ros::Time tempTime;
+	if (stageMode == false)
+		{
+			tempTime = ros::Time::now();
+		}
+		else
+		{
+			tempTime = clockTime.clock;
+		}
     if (defeat == true)
     {
         ROS_INFO("[ASSERTIVE_BEHAVIOUR] RETREATING");
@@ -763,11 +858,23 @@ void AssertiveBehaviour::fightingBehaviour()
         }
        cmd_vel_pub.publish(move_cmd);
        subjectAhead();
+	
+
+
        if (subjectDetected == true)
        {
-            timer = ros::Time::now();
+            /*if (stageMode == false)
+		{
+			timer = ros::Time::now();
+		}
+		else
+		{
+			timer = clockTime.clock.secs;
+		}*/
+		timer = tempTime;
+
        }
-       else if (subjectDetected == false && (timer + ros::Duration(4) < ros::Time::now()))
+       else if (subjectDetected == false && (timer + ros::Duration(2) < tempTime))
        {
             audio_cmd.data = backToNormalSound;
             audio_pub.publish(audio_cmd);
@@ -775,15 +882,20 @@ void AssertiveBehaviour::fightingBehaviour()
             defeat = false;
             fighting = false;
             navigating = true;
+		distInitial = 10;
        }   
     }
 
     else /*Fight ongoing*/
     {
-        float distInitial;
+ 
         float distCurrent;
+
+	
+
+
         ROS_INFO("[ASSERTIVE_BEHAVIOUR] FIGHTING");
-        if ((timer + ros::Duration(1.0) > ros::Time::now()))
+        if ((timer + ros::Duration(1.0) > tempTime))
         {
             move_cmd.linear.x = -0.3;
             move_cmd.angular.z = 0.0;
@@ -806,9 +918,7 @@ void AssertiveBehaviour::fightingBehaviour()
                 }
                 else
                 {
-                    	initialX = 0;
-			initialY = 0;
-                
+
                 }
             }
             if (viconMode == true)
@@ -820,11 +930,14 @@ void AssertiveBehaviour::fightingBehaviour()
             }
             else
             {
-                distInitial = sqrt(pow(( - initialX), 2) + pow((latestPoses.transform.translation.y - initialY), 2));
-                    /*How far are you now?*/
-                distCurrent = 10000;
 		
-		for(int i = 0; i < humanMaximaArray.poses.size(); i++)
+
+		
+			
+
+                distCurrent = 11;
+		
+		/*for(int i = 0; i < humanMaximaArray.poses.size(); i++)
 		{
 			float angleToSubject = getDesiredAngle(humanMaximaArray.poses[i].position.x, humanMaximaArray.poses[i].position.y, 0, 0, false);
 			float distanceToSubject = sqrt(pow((humanMaximaArray.poses[i].position.x), 2) + pow((humanMaximaArray.poses[i].position.y), 2));
@@ -836,7 +949,27 @@ void AssertiveBehaviour::fightingBehaviour()
 					distCurrent = tempDistCurrent;
 				}
 			}
+		}*/
+
+		if(scrubbedScanReceived == true)
+		{
+		
+			for(int i = 0; i < scrubbedScan.ranges.size(); i++)
+			{
+				float allowedDistance = 0.75 + (1.00 - (1.00*(fabs(90 - i)/90)));
+				if ((scrubbedScan.ranges[i] - allowedDistance) < distCurrent && scrubbedScan.ranges[i] != 0.00)
+				{
+					distCurrent = (scrubbedScan.ranges[i] - allowedDistance);
+				}
+			}
+			
 		}
+		else
+		{
+			distCurrent = 0.1;
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Can't fight without scrubbed laser");
+		}
+
 
 
             }
@@ -844,35 +977,37 @@ void AssertiveBehaviour::fightingBehaviour()
             
             
             
-            if (distInitial > distCurrent + 0.25) /*If they have moved toward you, you lose*/
+            if (distInitial > distCurrent + 0.5) /*If they have moved toward you, you lose*/
             {
                 audio_cmd.data = loseFightSound;
                 audio_pub.publish(audio_cmd);
                 setLights(loseFightLights);
-                timer = ros::Time::now();
+                timer = tempTime;
                 defeat = true;
                 fightStarting = false;
             }
-            else if(distCurrent > distInitial + 0.25) /*If they have moved away from you, you win!*/
+            else if(distCurrent > distInitial + 0.5) /*If they have moved away from you, you win!*/
             {
                 audio_cmd.data = winFightSound;
                 audio_pub.publish(audio_cmd);
                 setLights(winFightLights);
-                timer = ros::Time::now();
+                timer = tempTime;
                 brave = true;
                 fighting = false;
                 navigating = true;
+		distInitial = 10;
                 fightStarting = false;
             }
-            else if (ros::Time::now() - timer >  ros::Duration(aggression)) /*Your patience ran out, so you win! Probably!*/
+            else if (tempTime - timer >  ros::Duration(aggression)) /*Your patience ran out, so you win! Probably!*/
             {
                 audio_cmd.data = winFightSound;
                 audio_pub.publish(audio_cmd);
                 setLights(winFightLights);
-                timer = ros::Time::now();
+                timer = tempTime;
                 brave = true;
                 fighting = false;
                 navigating = true;
+		distInitial = 10;
                 fightStarting = false;
             }
             else /*keep waiting*/
@@ -894,7 +1029,19 @@ ROS_INFO("[ASSERTIVE_BEHAVIOUR] PANIC");
 /*    move_cmd.linear.x = 0.0;
     move_cmd.angular.z = 0.0;
     cmd_vel_pub.publish(move_cmd);*/
-    if (ros::Time::now() - timer >  ros::Duration(3))
+
+	ros::Time tempTime;
+	if (stageMode == false)
+	{
+		tempTime = ros::Time::now();
+	}
+	else
+	{
+		tempTime = clockTime.clock;
+	}
+
+
+    if (tempTime - timer >  ros::Duration(3))
     {
         reverseClearance();
         if (behindRightClear == true)
@@ -937,8 +1084,18 @@ ROS_INFO("[ASSERTIVE_BEHAVIOUR] PANIC");
 void AssertiveBehaviour::navigatingBehaviour()
 {
 
-    if (((viconMode == true && poseReceived == true) || (viconMode == false)) && laserReceived == true)
+    if ((((viconMode == true || stageMode == true) && poseReceived == true) || (viconMode == false && stageMode == false)) && laserReceived == true)
     {
+	ros::Time tempTime;
+	if (stageMode == false)
+	{
+		tempTime = ros::Time::now();
+	}
+	else
+	{
+		tempTime = clockTime.clock;
+	}
+
         subjectAhead();
         /*If someone is newly detected ahead of you, a fight starts*/
         if (subjectDetected == true  && brave == false)
@@ -948,21 +1105,21 @@ void AssertiveBehaviour::navigatingBehaviour()
             move_cmd.angular.z = 0.0;
             cmd_vel_pub.publish(move_cmd);            
             fighting = true;
-            timer = ros::Time::now();
-            moveOrderTimer = ros::Time::now();
+            timer = tempTime;
+            //moveOrderTimer = tempTime;
             audio_cmd.data = fightStartSound;
             audio_pub.publish(audio_cmd);
             setLights(fightStartLights);
         }
         else if (subjectDetected == true  && brave == true) /*Someone is in front of you but you won a fight so keep pushing*/
         {
-                timer = ros::Time::now();
+                timer = tempTime;
                 waypointing();
                 ROS_INFO("[ASSERTIVE_BEHAVIOUR] WINNING");
         }
         else if (subjectDetected == false  && brave == true) /*you won a fight but there's no longer someone in front of you*/
         {
-            if (timer + ros::Duration(3) < ros::Time::now()) /*If they haven't been re-detected in front of you in 3 seconds stop being brave*/
+            if (timer + ros::Duration(3) < tempTime) /*If they haven't been re-detected in front of you in 3 seconds stop being brave*/
             {
                 ROS_INFO("[ASSERTIVE_BEHAVIOUR] WON");
                 audio_cmd.data = backToNormalSound;
@@ -974,7 +1131,7 @@ void AssertiveBehaviour::navigatingBehaviour()
         } /*Normal driving*/
         else
         {
-            ROS_INFO("[ASSERTIVE_BEHAVIOUR] Waypointing");
+            //ROS_INFO("[ASSERTIVE_BEHAVIOUR] Waypointing");
             waypointing();
         }
         
@@ -987,45 +1144,51 @@ void AssertiveBehaviour::navigatingBehaviour()
 
 /*One run of the loop, picks which behaviour to do depending on what state the robot is in. The different behaviours control state transitions based on their own criteria, this is just where the program reassesses which one to apply.*/
 void AssertiveBehaviour::spinOnce() {
-    /*if (((viconMode == true && poseReceived == true) || (viconMode == false)) && laserReceived == true)
+    if ((((viconMode == true || stageMode == true) && poseReceived == true) || (viconMode == false)) && laserReceived == true && scrubbedScanReceived == true)
     {
-        laserTest();
-    }*/
-    
-    if((timer + ros::Duration(5) < ros::Time::now()) && firstTime == false)
-    {
-        audio_cmd.data = startupSound;
-        audio_pub.publish(audio_cmd);
-        setLights(startupLights);
-        firstTime = true;
-    } 
-     
-    else if (firstTime == true){    
-        
-        if(panicking)
-        {
-            panickingBehaviour();
-        }
-        else if(fighting)
-        {
-            fightingBehaviour();
+	    if((timer + ros::Duration(5) < ros::Time::now()) && firstTime == false)
+	    {
+		audio_cmd.data = startupSound;
+		audio_pub.publish(audio_cmd);
+		setLights(startupLights);
+		firstTime = true;
+	    } 
+	     
+	    else if (firstTime == true){    
+		
+		if(panicking)
+		{
+		    //panickingBehaviour();
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Panic");
+		}
+		else if(fighting)
+		{
+		    fightingBehaviour();
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Fight");
 
-        }
-        else if(navigating)
-        {
-            
-            navigatingBehaviour();
-        }
-        else
-        {
-            ROS_INFO("[ASSERTIVE_BEHAVIOUR] Stateless");
-        }
+		}
+		else if(navigating)
+		{
+		    
+		    navigatingBehaviour();
+			//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Navigate");
+		}
+		else
+		{
+		    ROS_INFO("[ASSERTIVE_BEHAVIOUR] Stateless");
+		}
 	
 	
+		}
+		else
+		{}
+	  	
 	}
 	else
-	{}
-  	ros::spinOnce();
+	{
+		ROS_INFO("[ASSERTIVE_BEHAVIOUR] vicon mode: %d, stage mode: %d, pose received: %d, laser received: %d, scrubbed scan received: %d", viconMode, stageMode, poseReceived, laserReceived, scrubbedScanReceived);
+	}
+	ros::spinOnce();
 }
 
 /*Gets called by main, runs all the time at the given rate.*/

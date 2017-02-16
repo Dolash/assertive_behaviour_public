@@ -21,9 +21,10 @@
 #include <vector>
 #include <unistd.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Odometry.h>
 #include <nav_msgs/MapMetaData.h>
 #include <move_base_msgs/MoveBaseGoal.h>
-
+#include <rosgraph_msgs/Clock.h>
 
 #define PI 3.14159
 #define TWO_PI 6.283185*/
@@ -33,6 +34,7 @@ private:
 
 	ros::Time timer;
 	ros::Time moveOrderTimer;
+	rosgraph_msgs::Clock clockTime;
     bool panicking;
     bool fighting;
     bool navigating;
@@ -49,6 +51,13 @@ private:
     bool sonarReceived;
     geometry_msgs::TransformStamped latestPoses;
     geometry_msgs::TransformStamped latestSubjectPoses;
+
+
+	std::string poseTopic;
+	std::string scrubbedLaserTopic;
+	std::string cmdVelTopic;
+	std::string scanTopic;
+
 
     
 	geometry_msgs::PoseArray humanMaximaArray;
@@ -76,17 +85,21 @@ private:
  	
     float startX;
     float startY;
-
+	
     float goalX;
     float goalY;
-        
+        int toleranceThreshold;
     bool subjectDetected;
     
+	float distInitial;
+
     float initialX;
     float initialY;
     
     bool defeat;	
     float aggression;
+
+	nav_msgs::Odometry stagePose;
 
 	//move_base_msgs::MoveBaseGoal goal_cmd;
 	geometry_msgs::PoseStamped goal_cmd;
@@ -110,20 +123,22 @@ private:
     
     bool fightStarting;
 
+	bool stageMode;
 
 	bool humanReceived;
 
 	bool scrubbedScanReceived;
-
+	bool clockReceived;
 
   	void viconCallback(const geometry_msgs::TransformStamped::ConstPtr& pose);
+  	void stagePoseCallback(const nav_msgs::Odometry::ConstPtr& pose);
   	void viconSubjectCallback(const geometry_msgs::TransformStamped::ConstPtr& pose);
   	void laserCallback(const sensor_msgs::LaserScan scanData);
   	void sonarCallback(const p2os_msgs::SonarArray sonarData);
 	void cmdVelListenerCallback(const geometry_msgs::Twist navData);
 	void localMaximaCallback(const geometry_msgs::PoseArray maximaData);
 	void scrubbedScanCallback(const sensor_msgs::LaserScan scanData);
-
+	void clockCallback(const rosgraph_msgs::Clock clockData);
 
 	void navigatingBehaviour();
 	void fightingBehaviour();
@@ -180,6 +195,8 @@ protected:
 
 	ros::Subscriber cmdVelListenerSub;
 	ros::Subscriber scrubbedScanSub;
+
+	ros::Subscriber clockSub;
 
  	
 public:
