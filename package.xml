@@ -1,0 +1,48 @@
+<package>
+	<name>assertive_behaviour</name>
+  <!--<description brief="Assertive_Behaviour">
+
+     Assertive_Behaviour
+
+  </description> -->
+<version>0.0.1</version>
+  <description>
+	An assertive behaviour package.
+  </description>
+  <author>autolab</author>
+  <license>BSD</license>
+  <url>http://ros.org/wiki/Assertive_Behaviour</url>
+<buildtool_depend>catkin</buildtool_depend>  
+<maintainer email="jackt@sfu.ca">Jack Thomas</maintainer>
+
+<build_depend>roscpp</build_depend>
+<build_depend>geometry_msgs</build_depend>
+<build_depend>sensor_msgs</build_depend>
+<build_depend>std_msgs</build_depend>
+<build_depend>p2os_driver</build_depend>
+<build_depend>tf</build_depend>
+<build_depend>autonomy_leds_msgs</build_depend>
+<build_depend>nav_msgs</build_depend>
+
+<run_depend>roscpp</run_depend>
+<run_depend>geometry_msgs</run_depend>
+<run_depend>sensor_msgs</run_depend>
+<run_depend>std_msgs</run_depend>
+<run_depend>p2os_driver</run_depend>
+<run_depend>tf</run_depend>
+<run_depend>autonomy_leds_msgs</run_depend>
+<run_depend>nav_msgs</run_depend>
+
+  <!--<depend package="roscpp"/>
+  <depend package="geometry_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="std_msgs"/>
+
+  <depend package="p2os_driver"/>
+    <depend package="tf"/>
+    <depend package="autonomy_leds_msgs"/> -->
+
+  <!--<depend package="vector"/>-->
+</package>
+
+
