@@ -14,11 +14,14 @@ privNh.param<bool>("stage_mode", stageMode, true);
 	privNh.param<std::string>("scrubbed_scan_topic", scrubbedLaserTopic, "/scrubbed_scan");
 	privNh.param<std::string>("cmd_vel_topic", cmdVelTopic, "/cmd_vel");
 	privNh.param<std::string>("scan_topic", scanTopic, "/scan");
+	privNh.param<std::string>("amcl_topic", amclTopic, "/amcl_pose");
 
 	privNh.param<float>("start_x", startX, 1);
 privNh.param<float>("start_y", startY, 1);
 privNh.param<float>("end_x", goalX, 1);
 privNh.param<float>("end_y", goalY, 2);
+privNh.param<float>("start_yaw", startYaw, 0);
+privNh.param<float>("end_yaw", goalYaw, 0);
 privNh.param<int>("detection_tolerance", toleranceThreshold, 4);
         panicking = false;
         fighting = false;
@@ -35,7 +38,8 @@ privNh.param<int>("detection_tolerance", toleranceThreshold, 4);
         fightStarting = false;
         firstTime = false;
 	clockReceived = false;
-      
+	amclReceived = false;
+      	firstGoal = false;
         startupLights = 0;
         fightStartLights = 1;
         loseFightLights = 2;
@@ -94,6 +98,7 @@ privNh.param<int>("detection_tolerance", toleranceThreshold, 4);
 		cmdVelListenerSub = nh.subscribe("/listener/cmd_vel", 1, &AssertiveBehaviour::cmdVelListenerCallback, this);
 	//	humanMaximaSub = nh.subscribe("/human/local_maxima", 1, &AssertiveBehaviour::localMaximaCallback, this);
 		scrubbedScanSub = nh.subscribe(scrubbedLaserTopic, 1, &AssertiveBehaviour::scrubbedScanCallback, this);
+		amclSub = nh.subscribe(amclTopic, 1, &AssertiveBehaviour::amclCallback, this);
   	}
   	laserSub = nh.subscribe(scanTopic, 1, &AssertiveBehaviour::laserCallback, this);
   	sonarSub = nh.subscribe("/sonar", 1, &AssertiveBehaviour::sonarCallback, this);
@@ -151,7 +156,10 @@ void AssertiveBehaviour::cmdVelListenerCallback(const geometry_msgs::Twist navDa
 	}
 }
 
-
+void AssertiveBehaviour::amclCallback(const geometry_msgs::PoseWithCovarianceStamped amclData) {
+   amclPose = amclData;
+   amclReceived = true;
+}
 
 void AssertiveBehaviour::localMaximaCallback(const  geometry_msgs::PoseArray maximaData) {
    humanMaximaArray = maximaData;
@@ -622,53 +630,82 @@ void AssertiveBehaviour::waypointing()
 	}
 	else
 	{
-		if (moveOrderTimer + ros::Duration(30) < ros::Time::now())
+		
+		//if (moveOrderTimer + ros::Duration(30) < ros::Time::now() && amclReceived == true)
+		if (amclReceived == true)
 		{
-			moveOrderTimer = ros::Time::now();
+			
+			//moveOrderTimer = ros::Time::now();
 			if (returnTrip == false)
 			{
-				std_msgs::Header tmpHead;
-				geometry_msgs::Pose tmpPose;
-				geometry_msgs::Point tmpPoint;
-				geometry_msgs::Quaternion tmpQuaternion;
-				tmpPoint.x = startX;
-				tmpPoint.y = startY;
-				tmpPoint.z = 0.0;
-				tmpQuaternion.x = 0.0;
-				tmpQuaternion.y = 0.0;
-				tmpQuaternion.z = 0.0;
-				tmpQuaternion.w = 1.0;
-				tmpPose.position = tmpPoint;
-				tmpPose.orientation = tmpQuaternion;
-				goal_cmd.pose =	tmpPose;
-				tmpHead.frame_id = "map";
-				goal_cmd.header = tmpHead;
-				goal_pub.publish(goal_cmd);
-				returnTrip = true;
-				setLights(backToNormalLights);
+				float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - goalYaw;
+				if (yawDiff > 3.14159)
+				{
+					yawDiff += -6.2831;
+			    	}
+				else if (yawDiff < -3.14159)
+				{
+					yawDiff += 6.2831;
+				}
+				ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
+				if (((fabs(amclPose.pose.pose.position.x - goalX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
+				{
+					//tf::Quaternion::Quaternion(startYaw,0,0);
+					firstGoal = true;
+					std_msgs::Header tmpHead;
+					geometry_msgs::Pose tmpPose;
+					geometry_msgs::Point tmpPoint;
+					geometry_msgs::Quaternion tmpQuaternion;
+					tmpPoint.x = startX;
+					tmpPoint.y = startY;
+					tmpPoint.z = 0.0;
+					tmpQuaternion = tf::createQuaternionMsgFromYaw(startYaw);
+					tmpPose.position = tmpPoint;
+					tmpPose.orientation = tmpQuaternion;
+					goal_cmd.pose =	tmpPose;
+					tmpHead.frame_id = "map";
+					goal_cmd.header = tmpHead;
+					goal_pub.publish(goal_cmd);
+					returnTrip = true;
+					setLights(backToNormalLights);
+				}
 			}
 			else
 			{
-				std_msgs::Header tmpHead;
-				geometry_msgs::Pose tmpPose;
-				geometry_msgs::Point tmpPoint;
-				geometry_msgs::Quaternion tmpQuaternion;
-				tmpPoint.x = goalX;
-				tmpPoint.y = goalY;
-				tmpPoint.z = 0.0;
-				tmpQuaternion.x = 0.0;
-				tmpQuaternion.y = 0.0;
-				tmpQuaternion.z = 0.0;
-				tmpQuaternion.w = 1.0;
-				tmpPose.position = tmpPoint;
-				tmpPose.orientation = tmpQuaternion;
-				goal_cmd.pose =	tmpPose;
-				tmpHead.frame_id = "map";
-				goal_cmd.header = tmpHead;
-				goal_pub.publish(goal_cmd);
-				returnTrip = false;
-				setLights(backToNormalLights);
+				float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - startYaw;
+				if (yawDiff > 3.14159)
+				{
+					yawDiff += -6.2831;
+			    	}
+				else if (yawDiff < -3.14159)
+				{
+					yawDiff += 6.2831;
+				}
+				ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
+				if ((fabs(amclPose.pose.pose.position.x - startX) < 0.4 && fabs(amclPose.pose.pose.position.y - startY) < 0.4) &&  (fabs(yawDiff) < 0.3))
+				{
+					std_msgs::Header tmpHead;
+					geometry_msgs::Pose tmpPose;
+					geometry_msgs::Point tmpPoint;
+					geometry_msgs::Quaternion tmpQuaternion;
+					tmpPoint.x = goalX;
+					tmpPoint.y = goalY;
+					tmpPoint.z = 0.0;
+					tmpPose.position = tmpPoint;
+					tmpQuaternion = tf::createQuaternionMsgFromYaw(goalYaw);
+					tmpPose.orientation = tmpQuaternion;
+					goal_cmd.pose =	tmpPose;
+					tmpHead.frame_id = "map";
+					goal_cmd.header = tmpHead;
+					goal_pub.publish(goal_cmd);
+					returnTrip = false;
+					setLights(backToNormalLights);
+				}
 			}
+		}
+		else if (amclReceived == false)
+		{
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] amcl pose not received");
 		}
 	}
 
@@ -751,7 +788,7 @@ void AssertiveBehaviour::subjectAhead()
 			{
 				ROS_INFO("[ASSERTIVE_BEHAVIOUR]allowed distance: %f detection at: %f detection laser is: %d", allowedDistance, scrubbedScan.ranges[i], i);
 				counter++;
-				if (navigating == true && (scrubbedScan.ranges[i] - allowedDistance) < distInitial)
+				if (navigating == true && (scrubbedScan.ranges[i] - allowedDistance) < distInitial && counter >= toleranceThreshold)
 				{
 					distInitial = scrubbedScan.ranges[i] - allowedDistance;
 				}
@@ -818,7 +855,7 @@ void AssertiveBehaviour::reverseClearance()
 /*When a fight is initiated, the robot remains in this state until its forward interlocutor is cleared. The robot will either be unsure, or else if it decides the time is right it will advance, or else if it is being advanced upon it will back up.*/
 void AssertiveBehaviour::fightingBehaviour()
 {
-    ROS_INFO("[ASSERTIVE_BEHAVIOUR] FIGHTING");
+    //ROS_INFO("[ASSERTIVE_BEHAVIOUR] FIGHTING");
     /*TODO: Set good cmd_vel values when retreating*/
     /*First check if you've lost the fight and if so get out of the way*/
 	ros::Time tempTime;
@@ -832,7 +869,7 @@ void AssertiveBehaviour::fightingBehaviour()
 		}
     if (defeat == true)
     {
-        ROS_INFO("[ASSERTIVE_BEHAVIOUR] RETREATING");
+        //ROS_INFO("[ASSERTIVE_BEHAVIOUR] RETREATING");
         reverseClearance();
         if (behindRightClear == true)
         {
@@ -885,7 +922,7 @@ void AssertiveBehaviour::fightingBehaviour()
 	
 
 
-        ROS_INFO("[ASSERTIVE_BEHAVIOUR] FIGHTING");
+        //ROS_INFO("[ASSERTIVE_BEHAVIOUR] FIGHTING");
         if ((timer + ros::Duration(1.0) > tempTime))
         {
             move_cmd.linear.x = -0.3;
@@ -1106,7 +1143,7 @@ void AssertiveBehaviour::navigatingBehaviour()
         {
                 timer = tempTime;
                 waypointing();
-                ROS_INFO("[ASSERTIVE_BEHAVIOUR] WINNING");
+                //ROS_INFO("[ASSERTIVE_BEHAVIOUR] WINNING");
         }
         else if (subjectDetected == false  && brave == true) /*you won a fight but there's no longer someone in front of you*/
         {
@@ -1155,7 +1192,7 @@ void AssertiveBehaviour::spinOnce() {
 		else if(fighting)
 		{
 		    fightingBehaviour();
-			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Fight");
+			//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Fight");
 
 		}
 		else if(navigating)
@@ -1177,7 +1214,7 @@ void AssertiveBehaviour::spinOnce() {
 	}
 	else
 	{
-		ROS_INFO("[ASSERTIVE_BEHAVIOUR] vicon mode: %d, stage mode: %d, pose received: %d, laser received: %d, scrubbed scan received: %d", viconMode, stageMode, poseReceived, laserReceived, scrubbedScanReceived);
+		ROS_INFO("[ASSERTIVE_BEHAVIOUR] vicon mode: %d, stage mode: %d, pose received: %d, laser received: %d, scrubbed scan received: %d, amcl pose received: %d", viconMode, stageMode, poseReceived, laserReceived, scrubbedScanReceived, amclReceived);
 	}
 	ros::spinOnce();
 }

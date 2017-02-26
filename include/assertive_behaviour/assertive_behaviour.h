@@ -11,6 +11,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <std_msgs/Empty.h>
 #include <p2os_msgs/GripperState.h>
 #include <std_msgs/Float32.h>
@@ -49,6 +50,7 @@ private:
 	/*These bools confirm that the laser and sonar are transmitting, so that they won't be used unless these are triggered.*/
     bool laserReceived;
     bool sonarReceived;
+	bool amclReceived;
     geometry_msgs::TransformStamped latestPoses;
     geometry_msgs::TransformStamped latestSubjectPoses;
 
@@ -57,7 +59,7 @@ private:
 	std::string scrubbedLaserTopic;
 	std::string cmdVelTopic;
 	std::string scanTopic;
-
+	std::string amclTopic;
 
     
 	geometry_msgs::PoseArray humanMaximaArray;
@@ -88,6 +90,12 @@ private:
 	
     float goalX;
     float goalY;
+
+	float startYaw;
+	float goalYaw;
+
+	
+
         int toleranceThreshold;
     bool subjectDetected;
     
@@ -121,8 +129,12 @@ private:
     std::vector<std_msgs::ColorRGBA> lightColours;
     std_msgs::ColorRGBA temp;
     
-    bool fightStarting;
+	geometry_msgs::PoseWithCovarianceStamped amclPose;
 
+
+
+    bool fightStarting;
+	bool firstGoal;
 	bool stageMode;
 
 	bool humanReceived;
@@ -139,6 +151,7 @@ private:
 	void localMaximaCallback(const geometry_msgs::PoseArray maximaData);
 	void scrubbedScanCallback(const sensor_msgs::LaserScan scanData);
 	void clockCallback(const rosgraph_msgs::Clock clockData);
+	void amclCallback(const geometry_msgs::PoseWithCovarianceStamped amclData);
 
 	void navigatingBehaviour();
 	void fightingBehaviour();
@@ -179,6 +192,8 @@ protected:
     p2os_msgs::GripperState grip_cmd;
 	/*A single keyframe which can be used to set the leds different colours. Kept simple instead of animated for now.*/
     autonomy_leds_msgs::Keyframe lights;
+
+	
 	
  
  	/*Subscriber for vicon-derived pose*/
@@ -197,6 +212,8 @@ protected:
 	ros::Subscriber scrubbedScanSub;
 
 	ros::Subscriber clockSub;
+
+	ros::Subscriber amclSub;
 
  	
 public:
