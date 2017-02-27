@@ -23,6 +23,7 @@ privNh.param<float>("end_y", goalY, 2);
 privNh.param<float>("start_yaw", startYaw, 0);
 privNh.param<float>("end_yaw", goalYaw, 0);
 privNh.param<int>("detection_tolerance", toleranceThreshold, 4);
+privNh.param<float>("aggression", aggression, 8);
         panicking = false;
         fighting = false;
         navigating = true;
@@ -68,7 +69,7 @@ privNh.param<int>("detection_tolerance", toleranceThreshold, 4);
         	timer = ros::Time::now();
 		moveOrderTimer = ros::Time::now() - ros::Duration(30);
 	}        
-	aggression = 9;
+	//aggression = 9;
   	distInitial = 10;
         obstacle = false;
 	

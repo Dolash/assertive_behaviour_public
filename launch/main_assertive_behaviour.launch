@@ -13,6 +13,7 @@
 <arg name="end_y1" default = "4.116"/>
 <arg name="end_yaw1" default = "1.564"/>
 <arg name="tolerance" default = "4"/>
+<arg name="aggression" default = "8"/>
 
 <node name="assertive_behaviour" pkg="assertive_behaviour" type="assertive_behaviour" output="screen">
   
@@ -29,6 +30,7 @@
 	<param name="end_x" value="$(arg end_x1)"/>
 	<param name="end_y" value="$(arg end_y1)"/>
 	<param name="end_yaw" value="$(arg end_yaw1)"/>
+	<param name="aggression" value="$(arg aggression)"/>
 	<param name="detection_tolerance" value="$(arg tolerance)"/>
   </node>
 
