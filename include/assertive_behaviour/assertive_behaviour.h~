@@ -131,7 +131,7 @@ private:
     
 	geometry_msgs::PoseWithCovarianceStamped amclPose;
 
-	float 
+
 
     bool fightStarting;
 	bool firstGoal;

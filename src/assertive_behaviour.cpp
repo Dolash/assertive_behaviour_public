@@ -24,6 +24,8 @@ privNh.param<float>("start_yaw", startYaw, 0);
 privNh.param<float>("end_yaw", goalYaw, 0);
 privNh.param<int>("detection_tolerance", toleranceThreshold, 4);
 privNh.param<float>("aggression", aggression, 8);
+privNh.param<float>("lose_distance", loseDistance, 0.5);
+privNh.param<float>("win_distance", winDistance, 0.5);
         panicking = false;
         fighting = false;
         navigating = true;
@@ -798,7 +800,11 @@ void AssertiveBehaviour::subjectAhead()
 		if (counter >= toleranceThreshold)
 		{
 			subjectDetected = true;
-			ROS_INFO("[ASSERTIVE_BEHAVIOUR] HUMAN DETECTED");
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] SUBJECT DETECTED");
+		}
+		else
+		{
+			distInitial = 10;
 		}
 	}
 	else
@@ -1006,7 +1012,7 @@ void AssertiveBehaviour::fightingBehaviour()
             
             
             
-            if (distInitial > distCurrent + 0.5) /*If they have moved toward you, you lose*/
+            if (distInitial > distCurrent + loseDistance) /*If they have moved toward you, you lose*/
             {
                 audio_cmd.data = loseFightSound;
                 audio_pub.publish(audio_cmd);
@@ -1015,7 +1021,7 @@ void AssertiveBehaviour::fightingBehaviour()
                 defeat = true;
                 fightStarting = false;
             }
-            else if(distCurrent > distInitial + 0.5) /*If they have moved away from you, you win!*/
+            else if(distCurrent > distInitial + winDistance) /*If they have moved away from you, you win!*/
             {
                 audio_cmd.data = winFightSound;
                 audio_pub.publish(audio_cmd);
@@ -1143,6 +1149,7 @@ void AssertiveBehaviour::navigatingBehaviour()
         else if (subjectDetected == true  && brave == true) /*Someone is in front of you but you won a fight so keep pushing*/
         {
                 timer = tempTime;
+		distInitial = 10;
                 waypointing();
                 //ROS_INFO("[ASSERTIVE_BEHAVIOUR] WINNING");
         }
@@ -1175,16 +1182,17 @@ void AssertiveBehaviour::navigatingBehaviour()
 void AssertiveBehaviour::spinOnce() {
     if ((((viconMode == true || stageMode == true) && poseReceived == true) || (viconMode == false)) && laserReceived == true && scrubbedScanReceived == true)
     {
+		
 	    if((timer + ros::Duration(5) < ros::Time::now()) && firstTime == false)
 	    {
 		audio_cmd.data = startupSound;
 		audio_pub.publish(audio_cmd);
 		setLights(startupLights);
 		firstTime = true;
+		ROS_INFO("[ASSERTIVE_BEHAVIOUR] Let's get started!");
 	    } 
 	     
 	    else if (firstTime == true){    
-		
 		if(panicking)
 		{
 		    //panickingBehaviour();

@@ -94,7 +94,8 @@ private:
 	float startYaw;
 	float goalYaw;
 
-	
+	float loseDistance;
+	float winDistance;
 
         int toleranceThreshold;
     bool subjectDetected;

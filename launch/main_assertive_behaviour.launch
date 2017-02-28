@@ -6,14 +6,16 @@
 <arg name="scrubbed_scan_topic1" default = "/scrubbed_scan"/>
 <arg name="cmd_vel_topic1" default = "/cmd_vel"/>
 <arg name="amcl_topic1" default = "/amcl_pose"/>
-<arg name="start_x1" default = "9.23"/>
-<arg name="start_y1" default = "8.34"/>
+<arg name="start_x1" default = "9.617"/>
+<arg name="start_y1" default = "8.956"/>
 <arg name="start_yaw1" default = "-1.575"/>
-<arg name="end_x1" default = "9.179"/>
-<arg name="end_y1" default = "4.116"/>
-<arg name="end_yaw1" default = "1.564"/>
+<arg name="end_x1" default = "9.507"/>
+<arg name="end_y1" default = "4.420"/>
+<arg name="end_yaw1" default = "1.54"/>
 <arg name="tolerance" default = "4"/>
-<arg name="aggression" default = "8"/>
+<arg name="aggression" default = "6"/>
+<arg name="lose_distance" default = "0.75"/>
+<arg name="win_distance" default = "0.5"/>
 
 <node name="assertive_behaviour" pkg="assertive_behaviour" type="assertive_behaviour" output="screen">
   
@@ -32,6 +34,8 @@
 	<param name="end_yaw" value="$(arg end_yaw1)"/>
 	<param name="aggression" value="$(arg aggression)"/>
 	<param name="detection_tolerance" value="$(arg tolerance)"/>
+	<param name="lose_distance" value="$(arg lose_distance)"/>
+	<param name="win_distance" value="$(arg win_distance)"/>
   </node>
 
 
