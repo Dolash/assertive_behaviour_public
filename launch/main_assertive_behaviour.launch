@@ -6,12 +6,21 @@
 <arg name="scrubbed_scan_topic1" default = "/scrubbed_scan"/>
 <arg name="cmd_vel_topic1" default = "/cmd_vel"/>
 <arg name="amcl_topic1" default = "/amcl_pose"/>
-<arg name="start_x1" default = "9.617"/>
-<arg name="start_y1" default = "8.956"/>
-<arg name="start_yaw1" default = "-1.575"/>
-<arg name="end_x1" default = "9.507"/>
-<arg name="end_y1" default = "4.420"/>
-<arg name="end_yaw1" default = "1.54"/>
+
+<!--<arg name="start_x1" default = "9.490"/>
+<arg name="start_y1" default = "8.936"/>
+<arg name="start_yaw1" default = "-1.574"/>
+<arg name="end_x1" default = "9.397"/>
+<arg name="end_y1" default = "4.882"/>
+<arg name="end_yaw1" default = "1.565"/>-->
+
+<arg name="start_x1" default = "9.385"/>
+<arg name="start_y1" default = "8.652"/>
+<arg name="start_yaw1" default = "-1.574"/>
+<arg name="end_x1" default = "9.308"/>
+<arg name="end_y1" default = "3.910"/>
+<arg name="end_yaw1" default = "1.571"/>
+
 <arg name="tolerance" default = "4"/>
 <arg name="aggression" default = "6"/>
 <arg name="lose_distance" default = "0.75"/>
