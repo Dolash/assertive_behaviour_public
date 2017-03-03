@@ -94,12 +94,14 @@ private:
 	float startYaw;
 	float goalYaw;
 
-	
+	float loseDistance;
+	float winDistance;
 
         int toleranceThreshold;
     bool subjectDetected;
     
 	float distInitial;
+	float angleAtDefeat
 
     float initialX;
     float initialY;

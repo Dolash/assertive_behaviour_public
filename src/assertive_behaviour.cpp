@@ -43,6 +43,7 @@ privNh.param<float>("win_distance", winDistance, 0.5);
 	clockReceived = false;
 	amclReceived = false;
       	firstGoal = false;
+	unwinding = false;
         startupLights = 0;
         fightStartLights = 1;
         loseFightLights = 2;
@@ -876,40 +877,62 @@ void AssertiveBehaviour::fightingBehaviour()
 		}
     if (defeat == true)
     {
-        //ROS_INFO("[ASSERTIVE_BEHAVIOUR] RETREATING");
-        reverseClearance();
-        if (behindRightClear == true)
-        {
-            move_cmd.linear.x = -0.3;
-            move_cmd.angular.z = 0.5;
-        }
-        else if (behindLeftClear == true)
-        {
-            move_cmd.linear.x = -0.3;
-            move_cmd.angular.z = -0.5;
-        }
-        else if (behindMiddleClear == true)
-        {
-            move_cmd.linear.x = -0.3;
-            move_cmd.angular.z = 0.0;
-        }
-        else 
-        {
-            /*You're helpless! Hopefully they get out of your way?*/
-            move_cmd.linear.x = 0.0;
-            move_cmd.angular.z = -0.5;
-            ROS_INFO("[ASSERTIVE_BEHAVIOUR] STUCK RETREATING");
-        }
+        
+	//Idea: compare your turn angle to the one taken when you lost, if yawdiff is greater than half then stop moving. Repeat 
+
+	float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - angleAtDefeat;
+	if (yawDiff > 3.14159)
+	{
+		yawDiff += -6.2831;
+	}
+	else if (yawDiff < -3.14159)
+	{
+		yawDiff += 6.2831;
+	}
+	if ( yawDiff < 1.570795 && yawDiff > -1.570795)
+	{
+        	reverseClearance();
+	
+		if (behindRightClear == true)
+		{
+		    move_cmd.linear.x = -0.3;
+		    move_cmd.angular.z = 0.5;
+		}
+		else if (behindLeftClear == true)
+		{
+		    move_cmd.linear.x = -0.3;
+		    move_cmd.angular.z = -0.5;
+		}
+		else if (behindMiddleClear == true)
+		{
+		    move_cmd.linear.x = -0.3;
+		    move_cmd.angular.z = 0.0;
+		}
+		else 
+		{
+		    /*You're helpless! Hopefully they get out of your way?*/
+		    move_cmd.linear.x = 0.0;
+		    move_cmd.angular.z = -0.5;
+		    ROS_INFO("[ASSERTIVE_BEHAVIOUR] STUCK RETREATING");
+		}
+	}
+	else
+	{
+		move_cmd.linear.x = 0.0;
+		move_cmd.angular.z = 0.0;
+	}
        cmd_vel_pub.publish(move_cmd);
+
+
        subjectAhead();
 	
 
 
-       if (subjectDetected == true)
+       if (subjectDetected == true && unwinding == false)
        {
 		timer = tempTime;
        }
-       else if (subjectDetected == false && (timer + ros::Duration(2) < tempTime))
+       else if (subjectDetected == false && unwinding == false && (timer + ros::Duration(2) < tempTime))
        {
             audio_cmd.data = backToNormalSound;
             audio_pub.publish(audio_cmd);
@@ -919,6 +942,11 @@ void AssertiveBehaviour::fightingBehaviour()
             navigating = true;
 		distInitial = 10;
        }   
+	/*TODO: fix this*/
+	else if (unwinding == true)
+	{
+
+	}
     }
 
     else /*Fight ongoing*/
@@ -1010,7 +1038,8 @@ void AssertiveBehaviour::fightingBehaviour()
             }
             
             
-            
+
+
             
             if (distInitial > distCurrent + loseDistance) /*If they have moved toward you, you lose*/
             {
@@ -1020,6 +1049,7 @@ void AssertiveBehaviour::fightingBehaviour()
                 timer = tempTime;
                 defeat = true;
                 fightStarting = false;
+		angleAtDefeat = tf::getYaw(amclPose.pose.pose.orientation);
             }
             else if(distCurrent > distInitial + winDistance) /*If they have moved away from you, you win!*/
             {
