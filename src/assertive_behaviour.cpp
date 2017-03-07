@@ -651,7 +651,7 @@ void AssertiveBehaviour::waypointing()
 				{
 					yawDiff += 6.2831;
 				}
-				ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
+				//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
 				if (((fabs(amclPose.pose.pose.position.x - goalX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
 				{
 					//tf::Quaternion::Quaternion(startYaw,0,0);
@@ -685,7 +685,7 @@ void AssertiveBehaviour::waypointing()
 				{
 					yawDiff += 6.2831;
 				}
-				ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
+				//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
 				if ((fabs(amclPose.pose.pose.position.x - startX) < 0.4 && fabs(amclPose.pose.pose.position.y - startY) < 0.4) &&  (fabs(yawDiff) < 0.3))
 				{
 					std_msgs::Header tmpHead;
@@ -785,12 +785,12 @@ void AssertiveBehaviour::subjectAhead()
 		int counter = 0;
 		subjectDetected = false;
 		
-		for(int i = 0; i < scrubbedScan.ranges.size(); i++)
+		for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 		{
 			float allowedDistance = 0.75 + (1.00 - (1.00*(fabs(90 - i)/90)));
 			if (scrubbedScan.ranges[i] < allowedDistance && scrubbedScan.ranges[i] != 0.00)
 			{
-				ROS_INFO("[ASSERTIVE_BEHAVIOUR]allowed distance: %f detection at: %f detection laser is: %d", allowedDistance, scrubbedScan.ranges[i], i);
+				//ROS_INFO("[ASSERTIVE_BEHAVIOUR]allowed distance: %f detection at: %f detection laser is: %d", allowedDistance, scrubbedScan.ranges[i], i);
 				counter++;
 				if (navigating == true && (scrubbedScan.ranges[i] - allowedDistance) < distInitial && counter >= toleranceThreshold)
 				{
@@ -801,7 +801,7 @@ void AssertiveBehaviour::subjectAhead()
 		if (counter >= toleranceThreshold)
 		{
 			subjectDetected = true;
-			ROS_INFO("[ASSERTIVE_BEHAVIOUR] SUBJECT DETECTED");
+			//ROS_INFO("[ASSERTIVE_BEHAVIOUR] SUBJECT DETECTED: %d", counter);
 		}
 		else
 		{
@@ -889,63 +889,87 @@ void AssertiveBehaviour::fightingBehaviour()
 	{
 		yawDiff += 6.2831;
 	}
-	if ( yawDiff < 1.570795 && yawDiff > -1.570795)
-	{
-        	reverseClearance();
 	
-		if (behindRightClear == true)
-		{
-		    move_cmd.linear.x = -0.3;
-		    move_cmd.angular.z = 0.5;
-		}
-		else if (behindLeftClear == true)
-		{
-		    move_cmd.linear.x = -0.3;
-		    move_cmd.angular.z = -0.5;
-		}
-		else if (behindMiddleClear == true)
-		{
-		    move_cmd.linear.x = -0.3;
-		    move_cmd.angular.z = 0.0;
-		}
-		else 
-		{
-		    /*You're helpless! Hopefully they get out of your way?*/
-		    move_cmd.linear.x = 0.0;
-		    move_cmd.angular.z = -0.5;
-		    ROS_INFO("[ASSERTIVE_BEHAVIOUR] STUCK RETREATING");
-		}
-	}
-	else
-	{
-		move_cmd.linear.x = 0.0;
-		move_cmd.angular.z = 0.0;
-	}
-       cmd_vel_pub.publish(move_cmd);
 
 
        subjectAhead();
 	
-
-
-       if (subjectDetected == true && unwinding == false)
-       {
-		timer = tempTime;
-       }
-       else if (subjectDetected == false && unwinding == false && (timer + ros::Duration(2) < tempTime))
-       {
-            audio_cmd.data = backToNormalSound;
-            audio_pub.publish(audio_cmd);
-            setLights(backToNormalLights);
-            defeat = false;
-            fighting = false;
-            navigating = true;
-		distInitial = 10;
-       }   
-	/*TODO: fix this*/
-	else if (unwinding == true)
+	if (unwinding == false)
 	{
 
+
+		//if ( yawDiff < 1.570795 && yawDiff > -1.570795)
+		if (yawDiff < 1.3 && yawDiff > -1.3)
+		{
+			reverseClearance();
+	
+			if (behindRightClear == true)
+			{
+			    move_cmd.linear.x = -0.3;
+			    move_cmd.angular.z = 0.5;
+			}
+			else if (behindLeftClear == true)
+			{
+			    move_cmd.linear.x = -0.3;
+			    move_cmd.angular.z = -0.5;
+			}
+			else if (behindMiddleClear == true)
+			{
+			    move_cmd.linear.x = -0.3;
+			    move_cmd.angular.z = 0.0;
+			}
+			else 
+			{
+			    /*You're helpless! Hopefully they get out of your way?*/
+			    move_cmd.linear.x = 0.0;
+			    move_cmd.angular.z = -0.5;
+			    ROS_INFO("[ASSERTIVE_BEHAVIOUR] STUCK RETREATING");
+			}
+		}
+		else
+		{
+			move_cmd.linear.x = 0.0;
+			move_cmd.angular.z = 0.0;
+		}
+       		cmd_vel_pub.publish(move_cmd);
+
+
+	       if (subjectDetected == true)
+	       {
+			timer = tempTime;
+	       }
+	       else if (subjectDetected == false && (timer + ros::Duration(2) < tempTime))
+	       {
+		    unwinding = true;
+	       }   
+	
+	}
+	else
+	{
+		if (yawDiff > 0.35)
+		{
+			move_cmd.linear.x = 0.3;
+		    	move_cmd.angular.z = -0.5;
+		}
+		else if (yawDiff < -0.35)
+		{
+			move_cmd.linear.x = 0.3;
+		    	move_cmd.angular.z = 0.5;
+		}
+		else 
+		{
+			move_cmd.linear.x = 0.0;
+		    	move_cmd.angular.z = 0.0;
+			audio_cmd.data = backToNormalSound;
+		    audio_pub.publish(audio_cmd);
+		    setLights(backToNormalLights);
+		    defeat = false;
+		    fighting = false;
+		    navigating = true;
+			distInitial = 10;
+			unwinding = false;
+		}
+		cmd_vel_pub.publish(move_cmd);
 	}
     }
 
