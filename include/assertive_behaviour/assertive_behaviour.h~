@@ -101,7 +101,8 @@ private:
     bool subjectDetected;
     
 	float distInitial;
-	float angleAtDefeat
+	float angleAtDefeat;
+	bool unwinding;
 
     float initialX;
     float initialY;

@@ -103,6 +103,7 @@ private:
 	float distInitial;
 	float angleAtDefeat;
 	bool unwinding;
+	bool emergencyPause;
 
     float initialX;
     float initialY;

@@ -14,11 +14,11 @@
 <arg name="end_y1" default = "4.882"/>
 <arg name="end_yaw1" default = "1.565"/>-->
 
-<arg name="start_x1" default = "9.496"/>
-<arg name="start_y1" default = "9.688"/>
-<arg name="start_yaw1" default = "-1.542"/>
-<arg name="end_x1" default = "9.599"/>
-<arg name="end_y1" default = "3.554"/>
+<arg name="start_x1" default = "9.312"/>
+<arg name="start_y1" default = "8.725"/>
+<arg name="start_yaw1" default = "-1.571"/>
+<arg name="end_x1" default = "9.310"/>
+<arg name="end_y1" default = "4.897"/>
 <arg name="end_yaw1" default = "1.571"/>
 
 <arg name="tolerance" default = "10"/>

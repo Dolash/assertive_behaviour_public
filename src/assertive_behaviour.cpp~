@@ -44,6 +44,7 @@ privNh.param<float>("win_distance", winDistance, 0.5);
 	amclReceived = false;
       	firstGoal = false;
 	unwinding = false;
+	emergencyPause = false;
         startupLights = 0;
         fightStartLights = 1;
         loseFightLights = 2;
@@ -154,7 +155,7 @@ void AssertiveBehaviour::sonarCallback(const p2os_msgs::SonarArray sonarData) {
 
 void AssertiveBehaviour::cmdVelListenerCallback(const geometry_msgs::Twist navData)
 {
-	if (navigating == true)
+	if (navigating == true && emergencyPause == false)
 	{
 		cmd_vel_pub.publish(navData);
 	}
@@ -938,7 +939,7 @@ void AssertiveBehaviour::fightingBehaviour()
 	       {
 			timer = tempTime;
 	       }
-	       else if (subjectDetected == false && (timer + ros::Duration(2) < tempTime))
+	       else if (subjectDetected == false && (timer + ros::Duration(1) < tempTime))
 	       {
 		    unwinding = true;
 	       }   
@@ -946,12 +947,29 @@ void AssertiveBehaviour::fightingBehaviour()
 	}
 	else
 	{
-		if (yawDiff > 0.4)
+		/*if (subjectDetected == true)
+		{
+			
+			navigating = false;
+		    	move_cmd.linear.x = -0.5;
+		    	move_cmd.angular.z = 0.0;
+		    	cmd_vel_pub.publish(move_cmd);            
+		    	fighting = true;
+		    	timer = tempTime;
+		    	audio_cmd.data = fightStartSound;
+		    	audio_pub.publish(audio_cmd);
+		    	setLights(fightStartLights);
+
+			unwinding = false;
+			distInitial = 10;
+			defeat = false;
+		}*/
+		if (yawDiff > 0.35)
 		{
 			move_cmd.linear.x = 0.3;
 		    	move_cmd.angular.z = -0.5;
 		}
-		else if (yawDiff < -0.4)
+		else if (yawDiff < -0.35)
 		{
 			move_cmd.linear.x = 0.3;
 		    	move_cmd.angular.z = 0.5;
@@ -982,66 +1000,56 @@ void AssertiveBehaviour::fightingBehaviour()
 
 
         //ROS_INFO("[ASSERTIVE_BEHAVIOUR] FIGHTING");
-        if ((timer + ros::Duration(1.0) > tempTime))
+        if ((timer + ros::Duration(0.75) > tempTime))
         {
-            move_cmd.linear.x = -0.3;
-            move_cmd.angular.z = 0.0;
-            cmd_vel_pub.publish(move_cmd);
+		subjectAhead();
+		if (subjectDetected == false)
+		{
+			setLights(backToNormalLights);
+			fighting = false;
+		    	navigating = true;
+			distInitial = 10;
+                	fightStarting = false;
+			timer = tempTime;
+		}
+		else
+		{
+            		move_cmd.linear.x = -0.3;
+            		move_cmd.angular.z = 0.0;
+            		cmd_vel_pub.publish(move_cmd);
+		}
         }
         else
         {
             move_cmd.linear.x = 0.0;
             move_cmd.angular.z = 0.0;
             cmd_vel_pub.publish(move_cmd);
-            if (fightStarting == false)
+            
+            if (viconMode == true)
             {
-                fightStarting = true;
-                if (viconMode == true)
-                {
+
+		if (fightStarting == false)
+            	{
+                	fightStarting = true;
+               
                     initialX = latestSubjectPoses.transform.translation.x;
                     initialY = latestSubjectPoses.transform.translation.y;
                 
                     
-                }
-                else
-                {
+                
+            	}
 
-                }
-            }
-            if (viconMode == true)
-            {
-            /*How far were you from the subject at the start of the fight?*/
+            		/*How far were you from the subject at the start of the fight?*/
                     distInitial = sqrt(pow((latestPoses.transform.translation.x - initialX), 2) + pow((latestPoses.transform.translation.y - initialY), 2));
                     /*How far are you now?*/
-                    distCurrent = sqrt(pow((latestPoses.transform.translation.x - latestSubjectPoses.transform.translation.x), 2) + pow((latestPoses.transform.translation.y - latestSubjectPoses.transform.translation.y), 2));
+                    distCurrent = sqrt(pow((latestPoses.transform.translation.x - latestSubjectPoses.transform.translation.x), 2) + pow((latestPoses.transform.translation.y - 			   latestSubjectPoses.transform.translation.y), 2));
             }
             else
             {
-		
-
-		
-			
-
                 distCurrent = 11;
-		
-		/*for(int i = 0; i < humanMaximaArray.poses.size(); i++)
-		{
-			float angleToSubject = getDesiredAngle(humanMaximaArray.poses[i].position.x, humanMaximaArray.poses[i].position.y, 0, 0, false);
-			float distanceToSubject = sqrt(pow((humanMaximaArray.poses[i].position.x), 2) + pow((humanMaximaArray.poses[i].position.y), 2));
-			if(angleToSubject > -0.3 && angleToSubject < 0.3)
-			{
-				float tempDistCurrent = sqrt(pow(humanMaximaArray.poses[i].position.x, 2) + pow(humanMaximaArray.poses[i].position.y, 2));
-				if (tempDistCurrent < distCurrent)
-				{
-					distCurrent = tempDistCurrent;
-				}
-			}
-		}*/
-
 		if(scrubbedScanReceived == true)
 		{
-		
-			for(int i = 0; i < scrubbedScan.ranges.size(); i++)
+			for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 			{
 				float allowedDistance = 0.75 + (1.00 - (1.00*(fabs(90 - i)/90)));
 				if ((scrubbedScan.ranges[i] - allowedDistance) < distCurrent && scrubbedScan.ranges[i] != 0.00)
@@ -1190,7 +1198,7 @@ void AssertiveBehaviour::navigatingBehaviour()
         if (subjectDetected == true  && brave == false)
         {
 		navigating = false;
-            move_cmd.linear.x = -0.5;
+            move_cmd.linear.x = -0.35;
             move_cmd.angular.z = 0.0;
             cmd_vel_pub.publish(move_cmd);            
             fighting = true;
@@ -1202,14 +1210,57 @@ void AssertiveBehaviour::navigatingBehaviour()
         }
         else if (subjectDetected == true  && brave == true) /*Someone is in front of you but you won a fight so keep pushing*/
         {
-                timer = tempTime;
-		distInitial = 10;
-                waypointing();
+		//if(latestSonarScan[3] < 0.5 || latestSonarScan[4] < 0.5)
+		emergencyPause = false;
+		for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
+		{
+			float allowedDistanceScrubbed = 0.25 + (0.25 - (0.25*(fabs(90 - i)/90)));
+			//float allowedDistanceInverse = 0.15 + (0.15 - (0.15*(fabs(90 - i)/90)));
+			if (scrubbedScan.ranges[i] < allowedDistanceScrubbed && scrubbedScan.ranges[i] != 0.00)
+			{
+				ROS_INFO("[ASSERTIVE_BEHAVIOUR]In my wayyyyyyyyyyy");
+				emergencyPause = true;
+			}
+		}
+		if (emergencyPause == true)
+		{
+			
+			
+			if (timer +ros::Duration(2) < tempTime)
+			{
+				emergencyPause = false;
+				brave = false;
+				navigating = false;
+            			move_cmd.linear.x = -0.35;
+			    move_cmd.angular.z = 0.0;
+				distInitial = 10;
+			    cmd_vel_pub.publish(move_cmd);            
+			    fighting = true;
+			    timer = tempTime;
+			    //moveOrderTimer = tempTime;
+			    audio_cmd.data = fightStartSound;
+			    audio_pub.publish(audio_cmd);
+			    setLights(fightStartLights);
+			}
+			else
+			{
+				move_cmd.linear.x = 0.0;
+            			move_cmd.angular.z = 0.0;
+            			cmd_vel_pub.publish(move_cmd); 
+			}
+		}
+		else
+		{
+                	timer = tempTime;
+			distInitial = 10;
+                	waypointing();
+		}
                 //ROS_INFO("[ASSERTIVE_BEHAVIOUR] WINNING");
         }
         else if (subjectDetected == false  && brave == true) /*you won a fight but there's no longer someone in front of you*/
         {
-            if (timer + ros::Duration(3) < tempTime) /*If they haven't been re-detected in front of you in 3 seconds stop being brave*/
+		emergencyPause = false;
+            if (timer + ros::Duration(2) < tempTime) /*If they haven't been re-detected in front of you in 3 seconds stop being brave*/
             {
                 ROS_INFO("[ASSERTIVE_BEHAVIOUR] WON");
                 audio_cmd.data = backToNormalSound;
