@@ -22,6 +22,13 @@ privNh.param<float>("end_x", goalX, 1);
 privNh.param<float>("end_y", goalY, 2);
 privNh.param<float>("start_yaw", startYaw, 0);
 privNh.param<float>("end_yaw", goalYaw, 0);
+privNh.param<float>("start_door_x", startDoorX, 1);
+privNh.param<float>("start_door_y", startDoorY, 1);
+privNh.param<float>("end_door_x", goalDoorX, 1);
+privNh.param<float>("end_door_y", goalDoorY, 2);
+privNh.param<float>("start_door_yaw", startDoorYaw, 0);
+privNh.param<float>("end_door_yaw", goalDoorYaw, 0);
+
 privNh.param<int>("detection_tolerance", toleranceThreshold, 4);
 privNh.param<float>("aggression", aggression, 8);
 privNh.param<float>("lose_distance", loseDistance, 0.5);
@@ -45,12 +52,13 @@ privNh.param<float>("win_distance", winDistance, 0.5);
       	firstGoal = false;
 	unwinding = false;
 	emergencyPause = false;
+	doorReached = false;
         startupLights = 0;
         fightStartLights = 1;
         loseFightLights = 2;
         winFightLights = 3;
         backToNormalLights = 4;
-        
+        fightSoundPlayed = false;
 
         
         temp.r = 0;
@@ -636,75 +644,149 @@ void AssertiveBehaviour::waypointing()
 	else
 	{
 		
-		//if (moveOrderTimer + ros::Duration(30) < ros::Time::now() && amclReceived == true)
 		if (amclReceived == true)
 		{
 			
-			//moveOrderTimer = ros::Time::now();
 			if (returnTrip == false)
 			{
-				float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - goalYaw;
-				if (yawDiff > 3.14159)
+				if (doorReached == false && firstGoal == true)
 				{
-					yawDiff += -6.2831;
-			    	}
-				else if (yawDiff < -3.14159)
-				{
-					yawDiff += 6.2831;
+					float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - goalDoorYaw;
+					if (yawDiff > 3.14159)
+					{
+						yawDiff += -6.2831;
+				    	}
+					else if (yawDiff < -3.14159)
+					{
+						yawDiff += 6.2831;
+					}
+					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
+					if (((fabs(amclPose.pose.pose.position.x - goalDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalDoorY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
+					{
+						//tf::Quaternion::Quaternion(startYaw,0,0);
+						std_msgs::Header tmpHead;
+						geometry_msgs::Pose tmpPose;
+						geometry_msgs::Point tmpPoint;
+						geometry_msgs::Quaternion tmpQuaternion;
+						tmpPoint.x = goalX;
+						tmpPoint.y = goalY;
+						tmpPoint.z = 0.0;
+						tmpQuaternion = tf::createQuaternionMsgFromYaw(goalYaw);
+						tmpPose.position = tmpPoint;
+						tmpPose.orientation = tmpQuaternion;
+						goal_cmd.pose =	tmpPose;
+						tmpHead.frame_id = "map";
+						goal_cmd.header = tmpHead;
+						goal_pub.publish(goal_cmd);
+						setLights(backToNormalLights);
+						doorReached = true;
+					}
 				}
-				//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
-				if (((fabs(amclPose.pose.pose.position.x - goalX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
+
+				else
 				{
-					//tf::Quaternion::Quaternion(startYaw,0,0);
-					firstGoal = true;
-					std_msgs::Header tmpHead;
-					geometry_msgs::Pose tmpPose;
-					geometry_msgs::Point tmpPoint;
-					geometry_msgs::Quaternion tmpQuaternion;
-					tmpPoint.x = startX;
-					tmpPoint.y = startY;
-					tmpPoint.z = 0.0;
-					tmpQuaternion = tf::createQuaternionMsgFromYaw(startYaw);
-					tmpPose.position = tmpPoint;
-					tmpPose.orientation = tmpQuaternion;
-					goal_cmd.pose =	tmpPose;
-					tmpHead.frame_id = "map";
-					goal_cmd.header = tmpHead;
-					goal_pub.publish(goal_cmd);
-					returnTrip = true;
-					setLights(backToNormalLights);
+			
+					float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - goalYaw;
+					if (yawDiff > 3.14159)
+					{
+						yawDiff += -6.2831;
+				    	}
+					else if (yawDiff < -3.14159)
+					{
+						yawDiff += 6.2831;
+					}
+					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
+					if (((fabs(amclPose.pose.pose.position.x - goalX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
+					{
+						//tf::Quaternion::Quaternion(startYaw,0,0);
+						firstGoal = true;
+						std_msgs::Header tmpHead;
+						geometry_msgs::Pose tmpPose;
+						geometry_msgs::Point tmpPoint;
+						geometry_msgs::Quaternion tmpQuaternion;
+						tmpPoint.x = startDoorX;
+						tmpPoint.y = startDoorY;
+						tmpPoint.z = 0.0;
+						tmpQuaternion = tf::createQuaternionMsgFromYaw(startDoorYaw);
+						tmpPose.position = tmpPoint;
+						tmpPose.orientation = tmpQuaternion;
+						goal_cmd.pose =	tmpPose;
+						tmpHead.frame_id = "map";
+						goal_cmd.header = tmpHead;
+						goal_pub.publish(goal_cmd);
+						returnTrip = true;
+						setLights(backToNormalLights);
+						doorReached = false;
+					}
 				}
 			}
 			else
 			{
-				float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - startYaw;
-				if (yawDiff > 3.14159)
+
+				if (doorReached == false)
 				{
-					yawDiff += -6.2831;
-			    	}
-				else if (yawDiff < -3.14159)
-				{
-					yawDiff += 6.2831;
+					float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - startDoorYaw;
+					if (yawDiff > 3.14159)
+					{
+						yawDiff += -6.2831;
+				    	}
+					else if (yawDiff < -3.14159)
+					{
+						yawDiff += 6.2831;
+					}
+					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
+					if ((fabs(amclPose.pose.pose.position.x - startDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - startDoorY) < 0.4) &&  (fabs(yawDiff) < 0.3))
+					{
+						std_msgs::Header tmpHead;
+						geometry_msgs::Pose tmpPose;
+						geometry_msgs::Point tmpPoint;
+						geometry_msgs::Quaternion tmpQuaternion;
+						tmpPoint.x = startX;
+						tmpPoint.y = startY;
+						tmpPoint.z = 0.0;
+						tmpPose.position = tmpPoint;
+						tmpQuaternion = tf::createQuaternionMsgFromYaw(startYaw);
+						tmpPose.orientation = tmpQuaternion;
+						goal_cmd.pose =	tmpPose;
+						tmpHead.frame_id = "map";
+						goal_cmd.header = tmpHead;
+						goal_pub.publish(goal_cmd);
+						setLights(backToNormalLights);
+						doorReached = true;
+					}
 				}
-				//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
-				if ((fabs(amclPose.pose.pose.position.x - startX) < 0.4 && fabs(amclPose.pose.pose.position.y - startY) < 0.4) &&  (fabs(yawDiff) < 0.3))
+				else
 				{
-					std_msgs::Header tmpHead;
-					geometry_msgs::Pose tmpPose;
-					geometry_msgs::Point tmpPoint;
-					geometry_msgs::Quaternion tmpQuaternion;
-					tmpPoint.x = goalX;
-					tmpPoint.y = goalY;
-					tmpPoint.z = 0.0;
-					tmpPose.position = tmpPoint;
-					tmpQuaternion = tf::createQuaternionMsgFromYaw(goalYaw);
-					tmpPose.orientation = tmpQuaternion;
-					goal_cmd.pose =	tmpPose;
-					tmpHead.frame_id = "map";
-					goal_cmd.header = tmpHead;
-					goal_pub.publish(goal_cmd);
-					returnTrip = false;
-					setLights(backToNormalLights);
+					float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - startYaw;
+					if (yawDiff > 3.14159)
+					{
+						yawDiff += -6.2831;
+				    	}
+					else if (yawDiff < -3.14159)
+					{
+						yawDiff += 6.2831;
+					}
+					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
+					if ((fabs(amclPose.pose.pose.position.x - startX) < 0.4 && fabs(amclPose.pose.pose.position.y - startY) < 0.4) &&  (fabs(yawDiff) < 0.3))
+					{
+						std_msgs::Header tmpHead;
+						geometry_msgs::Pose tmpPose;
+						geometry_msgs::Point tmpPoint;
+						geometry_msgs::Quaternion tmpQuaternion;
+						tmpPoint.x = goalDoorX;
+						tmpPoint.y = goalDoorY;
+						tmpPoint.z = 0.0;
+						tmpPose.position = tmpPoint;
+						tmpQuaternion = tf::createQuaternionMsgFromYaw(goalDoorYaw);
+						tmpPose.orientation = tmpQuaternion;
+						goal_cmd.pose =	tmpPose;
+						tmpHead.frame_id = "map";
+						goal_cmd.header = tmpHead;
+						goal_pub.publish(goal_cmd);
+						returnTrip = false;
+						setLights(backToNormalLights);
+						doorReached = false;
+					}
 				}
 			}
 		}
@@ -906,17 +988,17 @@ void AssertiveBehaviour::fightingBehaviour()
 	
 			if (behindRightClear == true)
 			{
-			    move_cmd.linear.x = -0.3;
+			    move_cmd.linear.x = -0.5;
 			    move_cmd.angular.z = 0.5;
 			}
 			else if (behindLeftClear == true)
 			{
-			    move_cmd.linear.x = -0.3;
+			    move_cmd.linear.x = -0.5;
 			    move_cmd.angular.z = -0.5;
 			}
 			else if (behindMiddleClear == true)
 			{
-			    move_cmd.linear.x = -0.3;
+			    move_cmd.linear.x = -0.5;
 			    move_cmd.angular.z = 0.0;
 			}
 			else 
@@ -1021,6 +1103,12 @@ void AssertiveBehaviour::fightingBehaviour()
         }
         else
         {
+		if (fightSoundPlayed == false)
+		{
+			audio_cmd.data = fightStartSound;
+            		audio_pub.publish(audio_cmd);
+			fightSoundPlayed = true;
+		}
             move_cmd.linear.x = 0.0;
             move_cmd.angular.z = 0.0;
             cmd_vel_pub.publish(move_cmd);
@@ -1082,6 +1170,7 @@ void AssertiveBehaviour::fightingBehaviour()
                 defeat = true;
                 fightStarting = false;
 		angleAtDefeat = tf::getYaw(amclPose.pose.pose.orientation);
+		fightSoundPlayed = false;
             }
             else if(distCurrent > distInitial + winDistance) /*If they have moved away from you, you win!*/
             {
@@ -1094,6 +1183,7 @@ void AssertiveBehaviour::fightingBehaviour()
                 navigating = true;
 		distInitial = 10;
                 fightStarting = false;
+		fightSoundPlayed = false;
             }
             else if (tempTime - timer >  ros::Duration(aggression)) /*Your patience ran out, so you win! Probably!*/
             {
@@ -1106,6 +1196,7 @@ void AssertiveBehaviour::fightingBehaviour()
                 navigating = true;
 		distInitial = 10;
                 fightStarting = false;
+		fightSoundPlayed = false;
             }
             else /*keep waiting*/
             {
@@ -1143,17 +1234,17 @@ ROS_INFO("[ASSERTIVE_BEHAVIOUR] PANIC");
         reverseClearance();
         if (behindRightClear == true)
         {
-            move_cmd.linear.x = -0.3;
+            move_cmd.linear.x = -0.5;
             move_cmd.angular.z = -0.5;
         }
         else if (behindLeftClear == true)
         {
-            move_cmd.linear.x = -0.3;
+            move_cmd.linear.x = -0.5;
             move_cmd.angular.z = 0.5;
         }
         else if (behindMiddleClear == true)
         {
-            move_cmd.linear.x = -0.3;
+            move_cmd.linear.x = -0.5;
             move_cmd.angular.z = 0.0;
         }
         else 
@@ -1197,6 +1288,7 @@ void AssertiveBehaviour::navigatingBehaviour()
         /*If someone is newly detected ahead of you, a fight starts*/
         if (subjectDetected == true  && brave == false)
         {
+		emergencyPause = false;
 		navigating = false;
             move_cmd.linear.x = -0.35;
             move_cmd.angular.z = 0.0;
@@ -1204,17 +1296,14 @@ void AssertiveBehaviour::navigatingBehaviour()
             fighting = true;
             timer = tempTime;
             //moveOrderTimer = tempTime;
-            audio_cmd.data = fightStartSound;
-            audio_pub.publish(audio_cmd);
             setLights(fightStartLights);
         }
         else if (subjectDetected == true  && brave == true) /*Someone is in front of you but you won a fight so keep pushing*/
         {
 		//if(latestSonarScan[3] < 0.5 || latestSonarScan[4] < 0.5)
-		emergencyPause = false;
 		for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 		{
-			float allowedDistanceScrubbed = 0.25 + (0.25 - (0.25*(fabs(90 - i)/90)));
+			float allowedDistanceScrubbed = 0.3 + (0.30 - (0.30*(fabs(90 - i)/90)));
 			//float allowedDistanceInverse = 0.15 + (0.15 - (0.15*(fabs(90 - i)/90)));
 			if (scrubbedScan.ranges[i] < allowedDistanceScrubbed && scrubbedScan.ranges[i] != 0.00)
 			{
@@ -1226,7 +1315,7 @@ void AssertiveBehaviour::navigatingBehaviour()
 		{
 			
 			
-			if (timer + ros::Duration(2) < tempTime)
+			if (timer + ros::Duration(4) < tempTime)
 			{
 				emergencyPause = false;
 				brave = false;
@@ -1272,6 +1361,7 @@ void AssertiveBehaviour::navigatingBehaviour()
         } /*Normal driving*/
         else
         {
+		emergencyPause = false;
             //ROS_INFO("[ASSERTIVE_BEHAVIOUR] Waypointing");
             waypointing();
         }

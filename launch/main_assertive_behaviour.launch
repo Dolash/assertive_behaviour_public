@@ -14,17 +14,24 @@
 <arg name="end_y1" default = "4.882"/>
 <arg name="end_yaw1" default = "1.565"/>-->
 
-<arg name="start_x1" default = "9.312"/>
-<arg name="start_y1" default = "8.725"/>
-<arg name="start_yaw1" default = "-1.571"/>
-<arg name="end_x1" default = "9.310"/>
-<arg name="end_y1" default = "4.897"/>
-<arg name="end_yaw1" default = "1.571"/>
+<arg name="start_x1" default = "11.306"/>
+<arg name="start_y1" default = "4.241"/>
+<arg name="start_yaw1" default = "2.199"/>
+<arg name="end_x1" default = "7.224"/>
+<arg name="end_y1" default = "9.000"/>
+<arg name="end_yaw1" default = "-0.930"/>
+
+<arg name="start_door_x1" default = "9.306"/>
+<arg name="start_door_y1" default = "7.624"/>
+<arg name="start_door_yaw1" default = "-1.567"/>
+<arg name="end_door_x1" default = "9.224"/>
+<arg name="end_door_y1" default = "5.939"/>
+<arg name="end_door_yaw1" default = "1.553"/>
 
 <arg name="tolerance" default = "10"/>
-<arg name="aggression" default = "6"/>
+<arg name="aggression" default = "3"/>
 <arg name="lose_distance" default = "0.75"/>
-<arg name="win_distance" default = "0.5"/>
+<arg name="win_distance" default = "0.3"/>
 
 <node name="assertive_behaviour" pkg="assertive_behaviour" type="assertive_behaviour" output="screen">
   
@@ -41,6 +48,12 @@
 	<param name="end_x" value="$(arg end_x1)"/>
 	<param name="end_y" value="$(arg end_y1)"/>
 	<param name="end_yaw" value="$(arg end_yaw1)"/>
+	<param name="start_door_x" value="$(arg start_x1)"/>
+	<param name="start_door_y" value="$(arg start_y1)"/>
+	<param name="start_door_yaw" value="$(arg start_yaw1)"/>
+	<param name="end_door_x" value="$(arg end_x1)"/>
+	<param name="end_door_y" value="$(arg end_y1)"/>
+	<param name="end_door_yaw" value="$(arg end_yaw1)"/>
 	<param name="aggression" value="$(arg aggression)"/>
 	<param name="detection_tolerance" value="$(arg tolerance)"/>
 	<param name="lose_distance" value="$(arg lose_distance)"/>

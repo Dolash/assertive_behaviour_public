@@ -84,6 +84,7 @@ private:
  	bool obstacle;
  	
  	bool returnTrip;
+	bool doorReached;
  	
     float startX;
     float startY;
@@ -93,6 +94,15 @@ private:
 
 	float startYaw;
 	float goalYaw;
+
+    float startDoorX;
+    float startDoorY;
+	
+    float goalDoorX;
+    float goalDoorY;
+
+	float startDoorYaw;
+	float goalDoorYaw;
 
 	float loseDistance;
 	float winDistance;
@@ -104,6 +114,7 @@ private:
 	float angleAtDefeat;
 	bool unwinding;
 	bool emergencyPause;
+	bool fightSoundPlayed;
 
     float initialX;
     float initialY;

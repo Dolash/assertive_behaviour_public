@@ -94,6 +94,15 @@ private:
 	float startYaw;
 	float goalYaw;
 
+    float startDoorX;
+    float startDoorY;
+	
+    float goalDoorX;
+    float goalDoorY;
+
+	float startDoorYaw;
+	float goalDoorYaw;
+
 	float loseDistance;
 	float winDistance;
 
@@ -103,6 +112,8 @@ private:
 	float distInitial;
 	float angleAtDefeat;
 	bool unwinding;
+	bool emergencyPause;
+	bool fightSoundPlayed;
 
     float initialX;
     float initialY;
