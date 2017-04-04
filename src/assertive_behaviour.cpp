@@ -680,6 +680,7 @@ void AssertiveBehaviour::waypointing()
 						goal_pub.publish(goal_cmd);
 						setLights(backToNormalLights);
 						doorReached = true;
+						ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goalDoor, now heading to goal at %f %f", goalX, goalY);
 					}
 				}
 
@@ -717,6 +718,7 @@ void AssertiveBehaviour::waypointing()
 						returnTrip = true;
 						setLights(backToNormalLights);
 						doorReached = false;
+						ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goal, now heading to startDoor at %f %f", startDoorX, startDoorY);
 					}
 				}
 			}
@@ -753,6 +755,7 @@ void AssertiveBehaviour::waypointing()
 						goal_pub.publish(goal_cmd);
 						setLights(backToNormalLights);
 						doorReached = true;
+						ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished startDoor, now heading to start at %f %f", startX, startY);
 					}
 				}
 				else
@@ -786,6 +789,7 @@ void AssertiveBehaviour::waypointing()
 						returnTrip = false;
 						setLights(backToNormalLights);
 						doorReached = false;
+						ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished start, now heading to goalDoor at %f %f", goalDoorX, goalDoorY);
 					}
 				}
 			}
@@ -982,23 +986,23 @@ void AssertiveBehaviour::fightingBehaviour()
 
 
 		//if ( yawDiff < 1.570795 && yawDiff > -1.570795)
-		if (yawDiff < 1.3 && yawDiff > -1.3)
+		if (yawDiff < 1.3 && yawDiff > -1.3 && subjectDetected == true)
 		{
 			reverseClearance();
 	
 			if (behindRightClear == true)
 			{
-			    move_cmd.linear.x = -0.5;
+			    move_cmd.linear.x = -0.3;
 			    move_cmd.angular.z = 0.5;
 			}
 			else if (behindLeftClear == true)
 			{
-			    move_cmd.linear.x = -0.5;
+			    move_cmd.linear.x = -0.3;
 			    move_cmd.angular.z = -0.5;
 			}
 			else if (behindMiddleClear == true)
 			{
-			    move_cmd.linear.x = -0.5;
+			    move_cmd.linear.x = -0.3;
 			    move_cmd.angular.z = 0.0;
 			}
 			else 
@@ -1021,7 +1025,7 @@ void AssertiveBehaviour::fightingBehaviour()
 	       {
 			timer = tempTime;
 	       }
-	       else if (subjectDetected == false && (timer + ros::Duration(1) < tempTime))
+	       else if (subjectDetected == false && (timer + ros::Duration(1.5) < tempTime))
 	       {
 		    unwinding = true;
 	       }   
@@ -1139,7 +1143,7 @@ void AssertiveBehaviour::fightingBehaviour()
 		{
 			for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 			{
-				float allowedDistance = 0.75 + (1.00 - (1.00*(fabs(90 - i)/90)));
+				float allowedDistance = 0.5 + (1.25 - (1.25*(fabs(90 - i)/90)));
 				if ((scrubbedScan.ranges[i] - allowedDistance) < distCurrent && scrubbedScan.ranges[i] != 0.00)
 				{
 					distCurrent = (scrubbedScan.ranges[i] - allowedDistance);
@@ -1303,11 +1307,11 @@ void AssertiveBehaviour::navigatingBehaviour()
 		//if(latestSonarScan[3] < 0.5 || latestSonarScan[4] < 0.5)
 		for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 		{
-			float allowedDistanceScrubbed = 0.3 + (0.30 - (0.30*(fabs(90 - i)/90)));
+			float allowedDistanceScrubbed = 0.4 + (0.20 - (0.20*(fabs(90 - i)/90)));
 			//float allowedDistanceInverse = 0.15 + (0.15 - (0.15*(fabs(90 - i)/90)));
 			if (scrubbedScan.ranges[i] < allowedDistanceScrubbed && scrubbedScan.ranges[i] != 0.00)
 			{
-				ROS_INFO("[ASSERTIVE_BEHAVIOUR]In my wayyyyyyyyyyy");
+				//ROS_INFO("[ASSERTIVE_BEHAVIOUR]In my wayyyyyyyyyyy");
 				emergencyPause = true;
 			}
 		}
@@ -1322,6 +1326,7 @@ void AssertiveBehaviour::navigatingBehaviour()
 				navigating = false;
             			move_cmd.linear.x = -0.35;
 			    move_cmd.angular.z = 0.0;
+			/*TODO: Need to recalculate distInitial*/
 				distInitial = 10;
 			    cmd_vel_pub.publish(move_cmd);            
 			    fighting = true;
@@ -1351,7 +1356,7 @@ void AssertiveBehaviour::navigatingBehaviour()
 		emergencyPause = false;
             if (timer + ros::Duration(2) < tempTime) /*If they haven't been re-detected in front of you in 3 seconds stop being brave*/
             {
-                ROS_INFO("[ASSERTIVE_BEHAVIOUR] WON");
+               // ROS_INFO("[ASSERTIVE_BEHAVIOUR] WON");
                 audio_cmd.data = backToNormalSound;
                 audio_pub.publish(audio_cmd);
                 setLights(backToNormalLights);
