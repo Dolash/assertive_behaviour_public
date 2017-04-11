@@ -14,24 +14,31 @@
 <arg name="end_y1" default = "4.882"/>
 <arg name="end_yaw1" default = "1.565"/>-->
 
-<arg name="start_x1" default = "8.851"/>
-<arg name="start_y1" default = "3.968"/>
-<arg name="start_yaw1" default = "1.640"/>
-<arg name="end_x1" default = "8.330"/>
-<arg name="end_y1" default = "10.625"/>
-<arg name="end_yaw1" default = "-1.520"/>
+<arg name="start_x1" default = "9.478"/>
+<arg name="start_y1" default = "3.925"/>
+<arg name="start_yaw1" default = "1.567"/>
+<arg name="end_x1" default = "9.243"/>
+<arg name="end_y1" default = "10.881"/>
+<arg name="end_yaw1" default = "-1.571"/>
 
-<arg name="start_door_x1" default = "8.612"/>
-<arg name="start_door_y1" default = "7.697"/>
+<arg name="start_door_x1" default = "9.383"/>
+<arg name="start_door_y1" default = "7.552"/>
 <arg name="start_door_yaw1" default = "-1.571"/>
-<arg name="end_door_x1" default = "8.667"/>
-<arg name="end_door_y1" default = "6.254"/>
-<arg name="end_door_yaw1" default = "1.614"/>
+<arg name="end_door_x1" default = "9.453"/>
+<arg name="end_door_y1" default = "6.025"/>
+<arg name="end_door_yaw1" default = "1.571"/>
 
 <arg name="tolerance" default = "10"/>
 <arg name="aggression" default = "3"/>
 <arg name="lose_distance" default = "1.5"/>
 <arg name="win_distance" default = "0.1"/>
+
+
+<node name="emergency_stopper" pkg="emergency_stopper" type="emergency_stopper" output="screen">
+	<param name="scan_topic" value="/scan"/>
+	<param name="loser_topic" value="/loser"/>
+</node>
+
 
 <node name="assertive_behaviour" pkg="assertive_behaviour" type="assertive_behaviour" output="screen">
   

@@ -13,6 +13,7 @@
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <std_msgs/Empty.h>
+#include <std_msgs/Bool.h>
 #include <p2os_msgs/GripperState.h>
 #include <std_msgs/Float32.h>
 #include <p2os_msgs/SonarArray.h>
@@ -113,7 +114,7 @@ private:
 	float distInitial;
 	float angleAtDefeat;
 	bool unwinding;
-	bool emergencyPause;
+	std_msgs::Bool emergencyPause;
 	bool fightSoundPlayed;
 
     float initialX;
@@ -167,6 +168,7 @@ private:
 	void scrubbedScanCallback(const sensor_msgs::LaserScan scanData);
 	void clockCallback(const rosgraph_msgs::Clock clockData);
 	void amclCallback(const geometry_msgs::PoseWithCovarianceStamped amclData);
+	void emergencyStopCallback(const std_msgs::Bool emergencyPauseData);
 
 	void navigatingBehaviour();
 	void fightingBehaviour();
@@ -196,7 +198,8 @@ protected:
 	ros::Publisher keyframe_pub;
 	/*Publisher to set the movement goal*/
 	ros::Publisher goal_pub;
-	
+	/*Publisher to set the movement goal*/
+	ros::Publisher winner_pub;
 
 
 	/*Movement orders for Pioneer*/
@@ -208,7 +211,7 @@ protected:
 	/*A single keyframe which can be used to set the leds different colours. Kept simple instead of animated for now.*/
     autonomy_leds_msgs::Keyframe lights;
 
-	
+	std_msgs::Bool winner;
 	
  
  	/*Subscriber for vicon-derived pose*/
@@ -229,6 +232,8 @@ protected:
 	ros::Subscriber clockSub;
 
 	ros::Subscriber amclSub;
+
+	ros::Subscriber emergencyStopSub;
 
  	
 public:
