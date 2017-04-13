@@ -83,7 +83,7 @@ privNh.param<float>("win_distance", winDistance, 0.5);
 		moveOrderTimer = ros::Time::now() - ros::Duration(30);
 	}        
 	//aggression = 9;
-  	distInitial = 10;
+  
         obstacle = false;
 	
 	scrubbedScanReceived = false;
@@ -689,7 +689,7 @@ void AssertiveBehaviour::waypointing()
 						goal_pub.publish(goal_cmd);
 						setLights(backToNormalLights);
 						doorReached = true;
-						ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goalDoor, now heading to goal at %f %f", goalX, goalY);
+						//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goalDoor, now heading to goal at %f %f", goalX, goalY);
 					}
 				}
 
@@ -727,7 +727,7 @@ void AssertiveBehaviour::waypointing()
 						returnTrip = true;
 						setLights(backToNormalLights);
 						doorReached = false;
-						ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goal, now heading to startDoor at %f %f", startDoorX, startDoorY);
+						//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goal, now heading to startDoor at %f %f", startDoorX, startDoorY);
 					}
 				}
 			}
@@ -764,7 +764,7 @@ void AssertiveBehaviour::waypointing()
 						goal_pub.publish(goal_cmd);
 						setLights(backToNormalLights);
 						doorReached = true;
-						ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished startDoor, now heading to start at %f %f", startX, startY);
+						//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished startDoor, now heading to start at %f %f", startX, startY);
 					}
 				}
 				else
@@ -798,7 +798,7 @@ void AssertiveBehaviour::waypointing()
 						returnTrip = false;
 						setLights(backToNormalLights);
 						doorReached = false;
-						ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished start, now heading to goalDoor at %f %f", goalDoorX, goalDoorY);
+						//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished start, now heading to goalDoor at %f %f", goalDoorX, goalDoorY);
 					}
 				}
 			}
@@ -888,20 +888,17 @@ void AssertiveBehaviour::subjectAhead()
 			{
 				//ROS_INFO("[ASSERTIVE_BEHAVIOUR]allowed distance: %f detection at: %f detection laser is: %d", allowedDistance, scrubbedScan.ranges[i], i);
 				counter++;
-				if (navigating == true && (scrubbedScan.ranges[i] - allowedDistance) < distInitial && counter >= toleranceThreshold)
+				//TODO: MOVE THIS TO THE FIGHT AFTER THE 0.75s WAIT
+				/*if (navigating == true && (scrubbedScan.ranges[i] - allowedDistance) < distInitial && counter >= toleranceThreshold)
 				{
 					distInitial = scrubbedScan.ranges[i] - allowedDistance;
-				}
+				}*/
 			}
 		}
 		if (counter >= toleranceThreshold)
 		{
 			subjectDetected = true;
 			//ROS_INFO("[ASSERTIVE_BEHAVIOUR] SUBJECT DETECTED: %d", counter);
-		}
-		else
-		{
-			distInitial = 10;
 		}
 	}
 	else
@@ -1062,18 +1059,22 @@ void AssertiveBehaviour::fightingBehaviour()
 			defeat = false;
 		}*/
 		
-		if (yawDiff > 0.35)
+		if (yawDiff > 0.35 && emergencyPause.data == false)
 		{
 			move_cmd.linear.x = 0.3;
 		    	move_cmd.angular.z = -0.5;
 		}
-		else if (yawDiff < -0.35)
+		else if (yawDiff < -0.35 && emergencyPause.data == false)
 		{
 			move_cmd.linear.x = 0.3;
 		    	move_cmd.angular.z = 0.5;
 		}
 		else 
 		{
+			if (emergencyPause.data == true)
+			{
+				ROS_INFO("[ASSERTIVE_BEHAVIOUR] Abandoning unwinding: emergency stop triggered.");
+			}
 			move_cmd.linear.x = 0.0;
 		    	move_cmd.angular.z = 0.0;
 			cmd_vel_pub.publish(move_cmd);
@@ -1083,9 +1084,8 @@ void AssertiveBehaviour::fightingBehaviour()
 		    defeat = false;
 		    fighting = false;
 		    navigating = true;
-			distInitial = 10;
 			unwinding = false;
-			winner.data = true;
+			winner.data = false;
 			winner_pub.publish(winner);
 		}
 		cmd_vel_pub.publish(move_cmd);
@@ -1109,7 +1109,6 @@ void AssertiveBehaviour::fightingBehaviour()
 			setLights(backToNormalLights);
 			fighting = false;
 		    	navigating = true;
-			distInitial = 10;
                 	fightStarting = false;
 			timer = tempTime;
 		}
@@ -1125,6 +1124,24 @@ void AssertiveBehaviour::fightingBehaviour()
         {
 		if (fightSoundPlayed == false)
 		{
+			int counter = 0;
+			distInitial = 0;
+			for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
+			{
+				if (scrubbedScan.ranges[i] != 0)
+				{
+					distInitial += scrubbedScan.ranges[i];
+					counter++;
+				}	
+			}
+			if (counter > 0)
+			{
+				distInitial = distInitial/counter;
+			}
+			else
+			{
+				distInitial = 1.0;
+			}
 			audio_cmd.data = fightStartSound;
             		audio_pub.publish(audio_cmd);
 			fightSoundPlayed = true;
@@ -1154,16 +1171,27 @@ void AssertiveBehaviour::fightingBehaviour()
             }
             else
             {
-                distCurrent = 11;
+                distCurrent = 0;
 		if(scrubbedScanReceived == true)
 		{
+			int counter = 0;
+			distCurrent = 0;
 			for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 			{
-				float allowedDistance = 0.5 + (1.25 - (1.25*(fabs(90 - i)/90)));
-				if ((scrubbedScan.ranges[i] - allowedDistance) < distCurrent && scrubbedScan.ranges[i] != 0.00)
+				if (scrubbedScan.ranges[i] != 0)
 				{
-					distCurrent = (scrubbedScan.ranges[i] - allowedDistance);
-				}
+					distCurrent += scrubbedScan.ranges[i];
+					counter++;
+				}	
+			}
+			if (counter > 0)
+			{
+				distCurrent = distCurrent/counter;
+			}
+			else
+			{
+				ROS_INFO("[ASSERTIVE_BEHAVIOUR] No points in scrubbed scan???");
+				distCurrent = 1.0;
 			}
 			
 		}
@@ -1179,7 +1207,7 @@ void AssertiveBehaviour::fightingBehaviour()
             
             
 
-
+		//ROS_INFO("[ASSERTIVE_BEHAVIOUR] distCurrent: %f, distInitial: %f, loseDistance: %f, winDistance: %f", distCurrent, distInitial, loseDistance, winDistance);
             
             if (distInitial > distCurrent + loseDistance) /*If they have moved toward you, you lose*/
             {
@@ -1202,7 +1230,6 @@ void AssertiveBehaviour::fightingBehaviour()
                 brave = true;
                 fighting = false;
                 navigating = true;
-		distInitial = 10;
                 fightStarting = false;
 		fightSoundPlayed = false;
 		winner.data = true;
@@ -1217,7 +1244,6 @@ void AssertiveBehaviour::fightingBehaviour()
                 brave = true;
                 fighting = false;
                 navigating = true;
-		distInitial = 10;
                 fightStarting = false;
 		fightSoundPlayed = false;
 		winner.data = true;
@@ -1340,24 +1366,23 @@ void AssertiveBehaviour::navigatingBehaviour()
 		{
 			
 			
-			if (timer + ros::Duration(4) < tempTime)
+			if (timer + ros::Duration(10 - aggression) < tempTime)
 			{
 				
 				brave = false;
 				navigating = false;
-            			move_cmd.linear.x = -0.35;
-			    move_cmd.angular.z = 0.0;
-			/*TODO: Need to recalculate distInitial*/
-				distInitial = 10;
-			    cmd_vel_pub.publish(move_cmd);            
-			    fighting = true;
-			    timer = tempTime;
-			    //moveOrderTimer = tempTime;
-			    audio_cmd.data = fightStartSound;
-			    audio_pub.publish(audio_cmd);
-			    setLights(fightStartLights);
+				audio_cmd.data = loseFightSound;
+                		audio_pub.publish(audio_cmd);
+                		setLights(loseFightLights);
+                		timer = tempTime;
+                		defeat = true;
+				fighting = true;
+                		fightStarting = false;
+				angleAtDefeat = tf::getYaw(amclPose.pose.pose.orientation);
+				fightSoundPlayed = false;
 				winner.data = false;
 				winner_pub.publish(winner);
+
 			}
 			else
 			{
@@ -1369,7 +1394,6 @@ void AssertiveBehaviour::navigatingBehaviour()
 		else
 		{
                 	timer = tempTime;
-			distInitial = 10;
                 	waypointing();
 		}
                 //ROS_INFO("[ASSERTIVE_BEHAVIOUR] WINNING");
