@@ -14,24 +14,24 @@
 <arg name="end_y1" default = "4.882"/>
 <arg name="end_yaw1" default = "1.565"/>-->
 
-<arg name="start_x1" default = "9.493"/>
-<arg name="start_y1" default = "4.024"/>
+<arg name="start_x1" default = "9.379"/>
+<arg name="start_y1" default = "3.954"/>
 <arg name="start_yaw1" default = "1.571"/>
-<arg name="end_x1" default = "9.173"/>
-<arg name="end_y1" default = "10.781"/>
-<arg name="end_yaw1" default = "-1.446"/>
+<arg name="end_x1" default = "9.130"/>
+<arg name="end_y1" default = "10.867"/>
+<arg name="end_yaw1" default = "-1.573"/>
 
-<arg name="start_door_x1" default = "9.512"/>
-<arg name="start_door_y1" default = "7.667"/>
+<arg name="start_door_x1" default = "9.355"/>
+<arg name="start_door_y1" default = "7.739"/>
 <arg name="start_door_yaw1" default = "-1.571"/>
-<arg name="end_door_x1" default = "9.524"/>
-<arg name="end_door_y1" default = "5.925"/>
-<arg name="end_door_yaw1" default = "1.567"/>
+<arg name="end_door_x1" default = "9.395"/>
+<arg name="end_door_y1" default = "5.952"/>
+<arg name="end_door_yaw1" default = "1.571"/>
 
 <arg name="tolerance" default = "10"/>
 <arg name="aggression" default = "3"/>
-<arg name="lose_distance" default = "1.5"/>
-<arg name="win_distance" default = "0.1"/>
+<arg name="lose_distance" default = "0.3"/>
+<arg name="win_distance" default = "0.3"/>
 
 
 <node name="emergency_stopper" pkg="emergency_stopper" type="emergency_stopper" output="screen">
