@@ -36,6 +36,7 @@ private:
 
 	ros::Time timer;
 	ros::Time moveOrderTimer;
+	ros::Time beginTimer;
 	rosgraph_msgs::Clock clockTime;
     bool panicking;
     bool fighting;

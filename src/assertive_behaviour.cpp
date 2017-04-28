@@ -80,6 +80,7 @@ privNh.param<float>("win_distance", winDistance, 0.5);
 	if(stageMode == false)
 	{
         	timer = ros::Time::now();
+		beginTimer = ros::Time::now();
 		moveOrderTimer = ros::Time::now() - ros::Duration(30);
 	}        
 	//aggression = 9;
@@ -992,7 +993,7 @@ void AssertiveBehaviour::fightingBehaviour()
 
 
 		//if ( yawDiff < 1.570795 && yawDiff > -1.570795)
-		if (yawDiff < 1.3 && yawDiff > -1.3 && subjectDetected == true)
+		if (yawDiff < 1.0 && yawDiff > -1.0 && subjectDetected == true)
 		{
 			reverseClearance();
 	
@@ -1016,7 +1017,7 @@ void AssertiveBehaviour::fightingBehaviour()
 			    /*You're helpless! Hopefully they get out of your way?*/
 			    move_cmd.linear.x = 0.0;
 			    move_cmd.angular.z = -0.5;
-			    ROS_INFO("[ASSERTIVE_BEHAVIOUR] STUCK RETREATING");
+			    //ROS_INFO("[ASSERTIVE_BEHAVIOUR] STUCK RETREATING");
 			}
 		}
 		else
@@ -1142,6 +1143,7 @@ void AssertiveBehaviour::fightingBehaviour()
 			{
 				distInitial = 1.0;
 			}
+			ROS_INFO("distInitial: %f", distInitial);
 			audio_cmd.data = fightStartSound;
             		audio_pub.publish(audio_cmd);
 			fightSoundPlayed = true;
@@ -1219,6 +1221,7 @@ void AssertiveBehaviour::fightingBehaviour()
                 fightStarting = false;
 		angleAtDefeat = tf::getYaw(amclPose.pose.pose.orientation);
 		fightSoundPlayed = false;
+		ROS_INFO("LOST: distInitial: %f, distCurrent: %f, loseDistance: %f", distInitial, distCurrent, loseDistance);
 		
             }
             else if(distCurrent > distInitial + winDistance) /*If they have moved away from you, you win!*/
@@ -1234,6 +1237,7 @@ void AssertiveBehaviour::fightingBehaviour()
 		fightSoundPlayed = false;
 		winner.data = true;
 		winner_pub.publish(winner);
+		ROS_INFO("WON: distInitial: %f, distCurrent: %f, winDistance: %f", distInitial, distCurrent, winDistance);
             }
             else if (tempTime - timer >  ros::Duration(aggression)) /*Your patience ran out, so you win! Probably!*/
             {
@@ -1248,6 +1252,7 @@ void AssertiveBehaviour::fightingBehaviour()
 		fightSoundPlayed = false;
 		winner.data = true;
 		winner_pub.publish(winner);
+		ROS_INFO("WON??: distInitial: %f, distCurrent: %f, loseDistance: %f, winDistance: %f", distInitial, distCurrent, loseDistance, winDistance);
             }
             else /*keep waiting*/
             {
@@ -1322,7 +1327,7 @@ ROS_INFO("[ASSERTIVE_BEHAVIOUR] PANIC");
 /*This is the normal driving behaviour when either no subject is ahead or else you won the fight. Handles driving as well as obstace and subject detection.*/
 void AssertiveBehaviour::navigatingBehaviour()
 {
-
+	
     if ((((viconMode == true || stageMode == true) && poseReceived == true) || (viconMode == false && stageMode == false)) && laserReceived == true)
     {
 	ros::Time tempTime;
@@ -1427,6 +1432,9 @@ void AssertiveBehaviour::navigatingBehaviour()
 
 /*One run of the loop, picks which behaviour to do depending on what state the robot is in. The different behaviours control state transitions based on their own criteria, this is just where the program reassesses which one to apply.*/
 void AssertiveBehaviour::spinOnce() {
+	ros::Rate rate(loopHz);
+	/*static float count = 0;
+	printf("current rate: %f\n", count++ / (10* (ros::Time::now().toSec() - beginTimer.toSec())));*/
     if ((((viconMode == true || stageMode == true) && poseReceived == true) || (viconMode == false)) && laserReceived == true && scrubbedScanReceived == true)
     {
 		
@@ -1472,13 +1480,15 @@ void AssertiveBehaviour::spinOnce() {
 	{
 		ROS_INFO("[ASSERTIVE_BEHAVIOUR] vicon mode: %d, stage mode: %d, pose received: %d, laser received: %d, scrubbed scan received: %d, amcl pose received: %d", viconMode, stageMode, poseReceived, laserReceived, scrubbedScanReceived, amclReceived);
 	}
+	rate.sleep();
 	ros::spinOnce();
 }
 
 /*Gets called by main, runs all the time at the given rate.*/
 void AssertiveBehaviour::spin() {
-  ros::Rate rate(loopHz);
+  //ros::Rate rate(loopHz);
   while (ros::ok()) {
     spinOnce();
+	//rate.sleep();
   }
 }

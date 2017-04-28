@@ -199,7 +199,7 @@ protected:
 	/*Publisher to set the movement goal*/
 	ros::Publisher goal_pub;
 	/*Publisher to set the movement goal*/
-	ros::Publisher loser_pub;
+	ros::Publisher winner_pub;
 
 
 	/*Movement orders for Pioneer*/
@@ -211,7 +211,7 @@ protected:
 	/*A single keyframe which can be used to set the leds different colours. Kept simple instead of animated for now.*/
     autonomy_leds_msgs::Keyframe lights;
 
-	std_msgs::Bool loser;
+	std_msgs::Bool winner;
 	
  
  	/*Subscriber for vicon-derived pose*/
