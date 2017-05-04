@@ -1115,8 +1115,8 @@ void AssertiveBehaviour::fightingBehaviour()
 		}
 		else
 		{
-            		//move_cmd.linear.x = -0.3;
-			move_cmd.linear.x = 0.0;
+            		move_cmd.linear.x = -0.3;
+			//move_cmd.linear.x = 0.0;
             		move_cmd.angular.z = 0.0;
             		cmd_vel_pub.publish(move_cmd);
 		}
@@ -1125,7 +1125,7 @@ void AssertiveBehaviour::fightingBehaviour()
         {
 		if (fightSoundPlayed == false)
 		{
-			int counter = 0;
+			/*int counter = 0;
 			distInitial = 0;
 			for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 			{
@@ -1143,7 +1143,7 @@ void AssertiveBehaviour::fightingBehaviour()
 			{
 				distInitial = 1.0;
 			}
-			ROS_INFO("distInitial: %f", distInitial);
+			ROS_INFO("distInitial: %f", distInitial);*/
 			audio_cmd.data = fightStartSound;
             		audio_pub.publish(audio_cmd);
 			fightSoundPlayed = true;
@@ -1173,20 +1173,26 @@ void AssertiveBehaviour::fightingBehaviour()
             }
             else
             {
-                distCurrent = 0;
+                distCurrent = 10;
 		if(scrubbedScanReceived == true)
 		{
-			int counter = 0;
-			distCurrent = 0;
+			//int counter = 0;
+			
 			for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 			{
-				if (scrubbedScan.ranges[i] != 0)
+				float allowedDistance = 0.75 + (1.00 - (1.00*(fabs(90 - i)/90)));
+
+				if (distCurrent > scrubbedScan.ranges[i] - allowedDistance && scrubbedScan.ranges[i] != 0)
+				{
+					distCurrent = scrubbedScan.ranges[i] - allowedDistance;
+				}
+				/*if (scrubbedScan.ranges[i] != 0)
 				{
 					distCurrent += scrubbedScan.ranges[i];
 					counter++;
-				}	
+				}*/	
 			}
-			if (counter > 0)
+			/*if (counter > 0)
 			{
 				distCurrent = distCurrent/counter;
 			}
@@ -1194,13 +1200,17 @@ void AssertiveBehaviour::fightingBehaviour()
 			{
 				ROS_INFO("[ASSERTIVE_BEHAVIOUR] No points in scrubbed scan???");
 				distCurrent = 1.0;
-			}
+			}*/
 			
 		}
 		else
 		{
 			distCurrent = 0.1;
 			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Can't fight without scrubbed laser");
+		}
+		if (distCurrent == 10)
+		{
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] NO POINTS FOUND?????");
 		}
 
 
@@ -1211,7 +1221,8 @@ void AssertiveBehaviour::fightingBehaviour()
 
 		//ROS_INFO("[ASSERTIVE_BEHAVIOUR] distCurrent: %f, distInitial: %f, loseDistance: %f, winDistance: %f", distCurrent, distInitial, loseDistance, winDistance);
             
-            if (distInitial > distCurrent + loseDistance) /*If they have moved toward you, you lose*/
+            //if (distInitial > distCurrent + loseDistance) /*If they have moved toward you, you lose*/
+		if (distCurrent < loseDistance)
             {
                 audio_cmd.data = loseFightSound;
                 audio_pub.publish(audio_cmd);
@@ -1224,7 +1235,8 @@ void AssertiveBehaviour::fightingBehaviour()
 		ROS_INFO("LOST: distInitial: %f, distCurrent: %f, loseDistance: %f", distInitial, distCurrent, loseDistance);
 		
             }
-            else if(distCurrent > distInitial + winDistance) /*If they have moved away from you, you win!*/
+            //else if(distCurrent > distInitial + winDistance) /*If they have moved away from you, you win!*/
+		else if(distCurrent > winDistance)
             {
                 audio_cmd.data = winFightSound;
                 audio_pub.publish(audio_cmd);
