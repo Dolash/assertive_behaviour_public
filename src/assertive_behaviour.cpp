@@ -208,7 +208,7 @@ void AssertiveBehaviour::emergencyStopCallback(const std_msgs::Bool emergencyPau
 void AssertiveBehaviour::setLights(int setting)
 {
 
-    if (setting == 0)
+    /*if (setting == 0)
     {
         lights.duration = 60;
         lights.start_index = 12;
@@ -283,7 +283,28 @@ void AssertiveBehaviour::setLights(int setting)
             		lights.color_pattern[i].a = 0;
 		}
         }
-    }
+    }*/
+	lights.duration = 60;
+        lights.start_index = 12;
+        lights.pattern_repeat = 10;
+        for (int i = 0; i < 1; i++)
+        {
+		if (aggression < 5)
+		{
+            		lights.color_pattern[i].r = 1;
+            		lights.color_pattern[i].g = 0;
+            		lights.color_pattern[i].b = 0;
+            		lights.color_pattern[i].a = 0;
+		}
+		else
+		{
+			lights.color_pattern[i].r = 0;
+            		lights.color_pattern[i].g = 1;
+            		lights.color_pattern[i].b = 0;
+            		lights.color_pattern[i].a = 0;
+		}
+        }
+
     keyframe_pub.publish(lights);
 }
 
@@ -884,6 +905,10 @@ void AssertiveBehaviour::subjectAhead()
 		
 		for(int i = 20; i < scrubbedScan.ranges.size() - 20; i++)
 		{
+			/*if (scrubbedScan.ranges[i] != 0)
+			{
+				counter++;
+			}*/
 			float allowedDistance = 0.75 + (1.00 - (1.00*(fabs(90 - i)/90)));
 			if (scrubbedScan.ranges[i] < allowedDistance && scrubbedScan.ranges[i] != 0.00)
 			{
@@ -1115,7 +1140,7 @@ void AssertiveBehaviour::fightingBehaviour()
 		}
 		else
 		{
-            		move_cmd.linear.x = -0.3;
+            		move_cmd.linear.x = -0.2;
 			//move_cmd.linear.x = 0.0;
             		move_cmd.angular.z = 0.0;
             		cmd_vel_pub.publish(move_cmd);
@@ -1223,6 +1248,8 @@ void AssertiveBehaviour::fightingBehaviour()
             
             //if (distInitial > distCurrent + loseDistance) /*If they have moved toward you, you lose*/
 		if (distCurrent < loseDistance)
+		//TODO: manual_mode
+		//if (/*command A pushed*/)
             {
                 audio_cmd.data = loseFightSound;
                 audio_pub.publish(audio_cmd);
@@ -1237,6 +1264,8 @@ void AssertiveBehaviour::fightingBehaviour()
             }
             //else if(distCurrent > distInitial + winDistance) /*If they have moved away from you, you win!*/
 		else if(distCurrent > winDistance)
+		//TODO: manual_mode
+		//else if (/*command B pushed*/)
             {
                 audio_cmd.data = winFightSound;
                 audio_pub.publish(audio_cmd);
@@ -1252,7 +1281,9 @@ void AssertiveBehaviour::fightingBehaviour()
 		ROS_INFO("WON: distInitial: %f, distCurrent: %f, winDistance: %f", distInitial, distCurrent, winDistance);
             }
             else if (tempTime - timer >  ros::Duration(aggression)) /*Your patience ran out, so you win! Probably!*/
-            {
+            	//TODO: manual_mode
+		//else if(/*command C pushed*/)
+		{
                 audio_cmd.data = winFightSound;
                 audio_pub.publish(audio_cmd);
                 setLights(winFightLights);
@@ -1355,6 +1386,8 @@ void AssertiveBehaviour::navigatingBehaviour()
         subjectAhead();
         /*If someone is newly detected ahead of you, a fight starts*/
         if (subjectDetected == true  && brave == false)
+	//TODO: manual_mode
+	//if (/*command pushed*/)
         {
 		navigating = false;
             //move_cmd.linear.x = -0.35;

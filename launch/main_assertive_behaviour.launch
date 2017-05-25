@@ -14,21 +14,21 @@
 <arg name="end_y1" default = "4.882"/>
 <arg name="end_yaw1" default = "1.565"/>-->
 
-<arg name="start_x1" default = "8.694"/>
-<arg name="start_y1" default = "4.111"/>
-<arg name="start_yaw1" default = "1.571"/>
-<arg name="end_x1" default = "8.958"/>
-<arg name="end_y1" default = "10.737"/>
-<arg name="end_yaw1" default = "-1.615"/>
+<arg name="start_x1" default = "8.193"/>
+<arg name="start_y1" default = "3.112"/>
+<arg name="start_yaw1" default = "1.525"/>
+<arg name="end_x1" default = "8.213"/>
+<arg name="end_y1" default = "8.526"/>
+<arg name="end_yaw1" default = "-1.571"/>
 
-<arg name="start_door_x1" default = "8.912"/>
-<arg name="start_door_y1" default = "7.967"/>
-<arg name="start_door_yaw1" default = "-1.622"/>
-<arg name="end_door_x1" default = "8.909"/>
-<arg name="end_door_y1" default = "6.010"/>
-<arg name="end_door_yaw1" default = "1.571"/>
+<arg name="start_door_x1" default = "8.208"/>
+<arg name="start_door_y1" default = "4.726"/>
+<arg name="start_door_yaw1" default = "-1.571"/>
+<arg name="end_door_x1" default = "8.193"/>
+<arg name="end_door_y1" default = "4.012"/>
+<arg name="end_door_yaw1" default = "1.569"/>
 
-<arg name="tolerance" default = "10"/>
+<arg name="tolerance" default = "8"/>
 <arg name="aggression" default = "3"/>
 <arg name="lose_distance" default = "-0.9"/>
 <arg name="win_distance" default = "-0.3"/>
