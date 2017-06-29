@@ -9,6 +9,7 @@
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/LaserScan.h>
+#include <sensor_msgs/Joy.h>
 #include <geometry_msgs/PoseArray.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
@@ -43,6 +44,9 @@ private:
     bool navigating;
     bool driving;
 
+	bool unpaused;
+	bool listeningForUnpause;
+
 
 	sensor_msgs::LaserScan scrubbedScan;
     /*This stores the latest laser scan's 180 ranges*/
@@ -62,6 +66,7 @@ private:
 	std::string cmdVelTopic;
 	std::string scanTopic;
 	std::string amclTopic;
+	std::string joyTopic;
 
     
 	geometry_msgs::PoseArray humanMaximaArray;
@@ -170,6 +175,7 @@ private:
 	void clockCallback(const rosgraph_msgs::Clock clockData);
 	void amclCallback(const geometry_msgs::PoseWithCovarianceStamped amclData);
 	void emergencyStopCallback(const std_msgs::Bool emergencyPauseData);
+	void joyCallback(const sensor_msgs::Joy joyMessage);
 
 	void navigatingBehaviour();
 	void fightingBehaviour();
@@ -235,6 +241,8 @@ protected:
 	ros::Subscriber amclSub;
 
 	ros::Subscriber emergencyStopSub;
+
+	ros::Subscriber joySub;
 
  	
 public:

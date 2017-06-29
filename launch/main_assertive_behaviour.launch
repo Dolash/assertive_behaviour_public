@@ -6,6 +6,7 @@
 <arg name="scrubbed_scan_topic1" default = "/scrubbed_scan"/>
 <arg name="cmd_vel_topic1" default = "/cmd_vel"/>
 <arg name="amcl_topic1" default = "/amcl_pose"/>
+<arg name="joy_topic1" default = "/joy"/>
 
 <!--<arg name="start_x1" default = "9.490"/>
 <arg name="start_y1" default = "8.936"/>
@@ -14,19 +15,19 @@
 <arg name="end_y1" default = "4.882"/>
 <arg name="end_yaw1" default = "1.565"/>-->
 
-<arg name="start_x1" default = "8.193"/>
-<arg name="start_y1" default = "3.112"/>
-<arg name="start_yaw1" default = "1.525"/>
-<arg name="end_x1" default = "8.213"/>
-<arg name="end_y1" default = "8.526"/>
-<arg name="end_yaw1" default = "-1.571"/>
+<arg name="start_x1" default = "8.285"/>
+<arg name="start_y1" default = "8.811"/>
+<arg name="start_yaw1" default = "-1.571"/>
+<arg name="end_x1" default = "8.349"/>
+<arg name="end_y1" default = "2.226"/>
+<arg name="end_yaw1" default = "1.571"/>
 
-<arg name="start_door_x1" default = "8.208"/>
-<arg name="start_door_y1" default = "4.726"/>
-<arg name="start_door_yaw1" default = "-1.571"/>
-<arg name="end_door_x1" default = "8.193"/>
-<arg name="end_door_y1" default = "4.012"/>
-<arg name="end_door_yaw1" default = "1.569"/>
+<arg name="start_door_x1" default = "8.366"/>
+<arg name="start_door_y1" default = "3.912"/>
+<arg name="start_door_yaw1" default = "1.571"/>
+<arg name="end_door_x1" default = "8.322"/>
+<arg name="end_door_y1" default = "4.825"/>
+<arg name="end_door_yaw1" default = "-1.571"/>
 
 <arg name="tolerance" default = "8"/>
 <arg name="aggression" default = "3"/>
@@ -49,6 +50,7 @@
 	<param name="scrubbed_scan_topic" value="$(arg scrubbed_scan_topic1)"/>
 	<param name="cmd_vel_topic" value="$(arg cmd_vel_topic1)"/>
 	<param name="amcl_topic" value="$(arg amcl_topic1)"/>
+	<param name="joy_topic" value="$(arg joy_topic1)"/>
 	<param name="start_x" value="$(arg start_x1)"/>
 	<param name="start_y" value="$(arg start_y1)"/>
 	<param name="start_yaw" value="$(arg start_yaw1)"/>

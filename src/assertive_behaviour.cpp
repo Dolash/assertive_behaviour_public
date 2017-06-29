@@ -15,6 +15,7 @@ privNh.param<bool>("stage_mode", stageMode, true);
 	privNh.param<std::string>("cmd_vel_topic", cmdVelTopic, "/cmd_vel");
 	privNh.param<std::string>("scan_topic", scanTopic, "/scan");
 	privNh.param<std::string>("amcl_topic", amclTopic, "/amcl_pose");
+	privNh.param<std::string>("joy_topic", joyTopic, "/joy_pose");
 
 	privNh.param<float>("start_x", startX, 1);
 privNh.param<float>("start_y", startY, 1);
@@ -34,6 +35,8 @@ privNh.param<float>("aggression", aggression, 8);
 privNh.param<float>("lose_distance", loseDistance, 0.5);
 privNh.param<float>("win_distance", winDistance, 0.5);
         panicking = false;
+	listeningForUnpause = false;
+	unpaused = false;
         fighting = false;
         navigating = true;
         sonarReceived = false;
@@ -118,11 +121,14 @@ privNh.param<float>("win_distance", winDistance, 0.5);
   	laserSub = nh.subscribe(scanTopic, 1, &AssertiveBehaviour::laserCallback, this);
   	sonarSub = nh.subscribe("/sonar", 1, &AssertiveBehaviour::sonarCallback, this);
 	emergencyStopSub = nh.subscribe("/emergency_stop", 1, &AssertiveBehaviour::emergencyStopCallback, this);
+	joySub = nh.subscribe(joyTopic, 1, &AssertiveBehaviour::joyCallback, this);
+
 	cmd_vel_pub = nh.advertise<geometry_msgs::Twist>(cmdVelTopic, 30);
 	gripper_pub = nh.advertise<p2os_msgs::GripperState>("/gripper_control", 30);
 	audio_pub = nh.advertise<std_msgs::UInt16>("/sound_player", 1, true);
     	keyframe_pub = nh.advertise<autonomy_leds_msgs::Keyframe>("/leds/display", 1);
 	winner_pub = nh.advertise<std_msgs::Bool>("/winner", 1);
+	
     	
 
     clockSub = nh.subscribe("/clock", 1, &AssertiveBehaviour::clockCallback, this);
@@ -149,6 +155,17 @@ void AssertiveBehaviour::stagePoseCallback(const nav_msgs::Odometry::ConstPtr& p
 void AssertiveBehaviour::viconSubjectCallback(const geometry_msgs::TransformStamped::ConstPtr& pose) {
 
     latestSubjectPoses = *pose;
+}
+
+void AssertiveBehaviour::joyCallback(const sensor_msgs::Joy joyMessage) {
+
+	if (listeningForUnpause == true)
+	{
+		if (joyMessage.buttons[1] == 1)
+		{
+			unpaused = true;
+		}
+	}
 }
 
 /*For the laser subscriber, extracting the data from the message.*/
@@ -694,24 +711,36 @@ void AssertiveBehaviour::waypointing()
 					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
 					if (((fabs(amclPose.pose.pose.position.x - goalDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalDoorY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
 					{
-						//tf::Quaternion::Quaternion(startYaw,0,0);
-						std_msgs::Header tmpHead;
-						geometry_msgs::Pose tmpPose;
-						geometry_msgs::Point tmpPoint;
-						geometry_msgs::Quaternion tmpQuaternion;
-						tmpPoint.x = goalX;
-						tmpPoint.y = goalY;
-						tmpPoint.z = 0.0;
-						tmpQuaternion = tf::createQuaternionMsgFromYaw(goalYaw);
-						tmpPose.position = tmpPoint;
-						tmpPose.orientation = tmpQuaternion;
-						goal_cmd.pose =	tmpPose;
-						tmpHead.frame_id = "map";
-						goal_cmd.header = tmpHead;
-						goal_pub.publish(goal_cmd);
-						setLights(backToNormalLights);
-						doorReached = true;
-						//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goalDoor, now heading to goal at %f %f", goalX, goalY);
+						if(unpaused == false)
+						{
+							listeningForUnpause = true;
+							move_cmd.linear.x = 0.0;
+							move_cmd.angular.z = 0.0;
+							cmd_vel_pub.publish(move_cmd);
+						}
+						else
+						{
+							listeningForUnpause = false;
+							unpaused = false;
+							//tf::Quaternion::Quaternion(startYaw,0,0);
+							std_msgs::Header tmpHead;
+							geometry_msgs::Pose tmpPose;
+							geometry_msgs::Point tmpPoint;
+							geometry_msgs::Quaternion tmpQuaternion;
+							tmpPoint.x = goalX;
+							tmpPoint.y = goalY;
+							tmpPoint.z = 0.0;
+							tmpQuaternion = tf::createQuaternionMsgFromYaw(goalYaw);
+							tmpPose.position = tmpPoint;
+							tmpPose.orientation = tmpQuaternion;
+							goal_cmd.pose =	tmpPose;
+							tmpHead.frame_id = "map";
+							goal_cmd.header = tmpHead;
+							goal_pub.publish(goal_cmd);
+							setLights(backToNormalLights);
+							doorReached = true;
+							//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goalDoor, now heading to goal at %f %f", goalX, goalY);
+						}
 					}
 				}
 
@@ -730,26 +759,41 @@ void AssertiveBehaviour::waypointing()
 					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
 					if (((fabs(amclPose.pose.pose.position.x - goalX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
 					{
-						//tf::Quaternion::Quaternion(startYaw,0,0);
-						firstGoal = true;
-						std_msgs::Header tmpHead;
-						geometry_msgs::Pose tmpPose;
-						geometry_msgs::Point tmpPoint;
-						geometry_msgs::Quaternion tmpQuaternion;
-						tmpPoint.x = startDoorX;
-						tmpPoint.y = startDoorY;
-						tmpPoint.z = 0.0;
-						tmpQuaternion = tf::createQuaternionMsgFromYaw(startDoorYaw);
-						tmpPose.position = tmpPoint;
-						tmpPose.orientation = tmpQuaternion;
-						goal_cmd.pose =	tmpPose;
-						tmpHead.frame_id = "map";
-						goal_cmd.header = tmpHead;
-						goal_pub.publish(goal_cmd);
-						returnTrip = true;
-						setLights(backToNormalLights);
-						doorReached = false;
-						//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goal, now heading to startDoor at %f %f", startDoorX, startDoorY);
+						if(unpaused == false)
+						{
+
+							listeningForUnpause = true;
+							move_cmd.linear.x = 0.0;
+							move_cmd.angular.z = 0.0;
+							cmd_vel_pub.publish(move_cmd);
+						}
+						else
+						{
+							listeningForUnpause = false;
+							unpaused = false;
+							//tf::Quaternion::Quaternion(startYaw,0,0);
+							firstGoal = true;
+							std_msgs::Header tmpHead;
+							geometry_msgs::Pose tmpPose;
+							geometry_msgs::Point tmpPoint;
+							geometry_msgs::Quaternion tmpQuaternion;
+							tmpPoint.x = startDoorX;
+							tmpPoint.y = startDoorY;
+							tmpPoint.z = 0.0;
+							tmpQuaternion = tf::createQuaternionMsgFromYaw(startDoorYaw);
+							tmpPose.position = tmpPoint;
+							tmpPose.orientation = tmpQuaternion;
+							goal_cmd.pose =	tmpPose;
+							tmpHead.frame_id = "map";
+							goal_cmd.header = tmpHead;
+							goal_pub.publish(goal_cmd);
+							returnTrip = true;
+							aggression = 10 - aggression;
+							setLights(backToNormalLights);
+							doorReached = false;
+							
+							//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goal, now heading to startDoor at %f %f", startDoorX, startDoorY);
+						}
 					}
 				}
 			}
@@ -770,23 +814,36 @@ void AssertiveBehaviour::waypointing()
 					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
 					if ((fabs(amclPose.pose.pose.position.x - startDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - startDoorY) < 0.4) &&  (fabs(yawDiff) < 0.3))
 					{
-						std_msgs::Header tmpHead;
-						geometry_msgs::Pose tmpPose;
-						geometry_msgs::Point tmpPoint;
-						geometry_msgs::Quaternion tmpQuaternion;
-						tmpPoint.x = startX;
-						tmpPoint.y = startY;
-						tmpPoint.z = 0.0;
-						tmpPose.position = tmpPoint;
-						tmpQuaternion = tf::createQuaternionMsgFromYaw(startYaw);
-						tmpPose.orientation = tmpQuaternion;
-						goal_cmd.pose =	tmpPose;
-						tmpHead.frame_id = "map";
-						goal_cmd.header = tmpHead;
-						goal_pub.publish(goal_cmd);
-						setLights(backToNormalLights);
-						doorReached = true;
-						//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished startDoor, now heading to start at %f %f", startX, startY);
+						if(unpaused == false)
+						{
+
+							listeningForUnpause = true;
+							move_cmd.linear.x = 0.0;
+							move_cmd.angular.z = 0.0;
+							cmd_vel_pub.publish(move_cmd);
+						}
+						else
+						{
+							listeningForUnpause = false;
+							unpaused = false;
+							std_msgs::Header tmpHead;
+							geometry_msgs::Pose tmpPose;
+							geometry_msgs::Point tmpPoint;
+							geometry_msgs::Quaternion tmpQuaternion;
+							tmpPoint.x = startX;
+							tmpPoint.y = startY;
+							tmpPoint.z = 0.0;
+							tmpPose.position = tmpPoint;
+							tmpQuaternion = tf::createQuaternionMsgFromYaw(startYaw);
+							tmpPose.orientation = tmpQuaternion;
+							goal_cmd.pose =	tmpPose;
+							tmpHead.frame_id = "map";
+							goal_cmd.header = tmpHead;
+							goal_pub.publish(goal_cmd);
+							setLights(backToNormalLights);
+							doorReached = true;
+							//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished startDoor, now heading to start at %f %f", startX, startY);
+						}
 					}
 				}
 				else
@@ -803,24 +860,37 @@ void AssertiveBehaviour::waypointing()
 					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
 					if ((fabs(amclPose.pose.pose.position.x - startX) < 0.4 && fabs(amclPose.pose.pose.position.y - startY) < 0.4) &&  (fabs(yawDiff) < 0.3))
 					{
-						std_msgs::Header tmpHead;
-						geometry_msgs::Pose tmpPose;
-						geometry_msgs::Point tmpPoint;
-						geometry_msgs::Quaternion tmpQuaternion;
-						tmpPoint.x = goalDoorX;
-						tmpPoint.y = goalDoorY;
-						tmpPoint.z = 0.0;
-						tmpPose.position = tmpPoint;
-						tmpQuaternion = tf::createQuaternionMsgFromYaw(goalDoorYaw);
-						tmpPose.orientation = tmpQuaternion;
-						goal_cmd.pose =	tmpPose;
-						tmpHead.frame_id = "map";
-						goal_cmd.header = tmpHead;
-						goal_pub.publish(goal_cmd);
-						returnTrip = false;
-						setLights(backToNormalLights);
-						doorReached = false;
-						//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished start, now heading to goalDoor at %f %f", goalDoorX, goalDoorY);
+						if(unpaused == false)
+						{
+							listeningForUnpause = true;
+							move_cmd.linear.x = 0.0;
+							move_cmd.angular.z = 0.0;
+							cmd_vel_pub.publish(move_cmd);
+						}
+						else
+						{
+							listeningForUnpause = false;
+							unpaused = false;
+							std_msgs::Header tmpHead;
+							geometry_msgs::Pose tmpPose;
+							geometry_msgs::Point tmpPoint;
+							geometry_msgs::Quaternion tmpQuaternion;
+							tmpPoint.x = goalDoorX;
+							tmpPoint.y = goalDoorY;
+							tmpPoint.z = 0.0;
+							tmpPose.position = tmpPoint;
+							tmpQuaternion = tf::createQuaternionMsgFromYaw(goalDoorYaw);
+							tmpPose.orientation = tmpQuaternion;
+							goal_cmd.pose =	tmpPose;
+							tmpHead.frame_id = "map";
+							goal_cmd.header = tmpHead;
+							goal_pub.publish(goal_cmd);
+							returnTrip = false;
+							aggression = 10 - aggression;
+							setLights(backToNormalLights);
+							doorReached = false;
+							//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished start, now heading to goalDoor at %f %f", goalDoorX, goalDoorY);
+						}
 					}
 				}
 			}
