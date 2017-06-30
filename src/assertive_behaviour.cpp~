@@ -15,6 +15,7 @@ privNh.param<bool>("stage_mode", stageMode, true);
 	privNh.param<std::string>("cmd_vel_topic", cmdVelTopic, "/cmd_vel");
 	privNh.param<std::string>("scan_topic", scanTopic, "/scan");
 	privNh.param<std::string>("amcl_topic", amclTopic, "/amcl_pose");
+	privNh.param<std::string>("joy_topic", joyTopic, "/joy_pose");
 
 	privNh.param<float>("start_x", startX, 1);
 privNh.param<float>("start_y", startY, 1);
@@ -157,13 +158,23 @@ void AssertiveBehaviour::viconSubjectCallback(const geometry_msgs::TransformStam
 }
 
 void AssertiveBehaviour::joyCallback(const sensor_msgs::Joy joyMessage) {
-
+	ROS_INFO("[ASSERTIVE_BEHAVIOUR] Joy message received.");
 	if (listeningForUnpause == true)
 	{
+		ROS_INFO("[ASSERTIVE_BEHAVIOUR] listening.");
 		if (joyMessage.buttons[1] == 1)
 		{
 			unpaused = true;
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Unpaused.");
 		}
+		else
+		{
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Wrong button pressed or no button pressed.");
+		}
+	}
+	else
+	{
+		ROS_INFO("[ASSERTIVE_BEHAVIOUR] Not listening.");
 	}
 }
 

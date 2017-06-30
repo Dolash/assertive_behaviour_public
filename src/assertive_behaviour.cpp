@@ -158,13 +158,23 @@ void AssertiveBehaviour::viconSubjectCallback(const geometry_msgs::TransformStam
 }
 
 void AssertiveBehaviour::joyCallback(const sensor_msgs::Joy joyMessage) {
-
+	ROS_INFO("[ASSERTIVE_BEHAVIOUR] Joy message received.");
 	if (listeningForUnpause == true)
 	{
+		ROS_INFO("[ASSERTIVE_BEHAVIOUR] listening.");
 		if (joyMessage.buttons[1] == 1)
 		{
 			unpaused = true;
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Unpaused.");
 		}
+		else
+		{
+			ROS_INFO("[ASSERTIVE_BEHAVIOUR] Wrong button pressed or no button pressed.");
+		}
+	}
+	else
+	{
+		ROS_INFO("[ASSERTIVE_BEHAVIOUR] Not listening.");
 	}
 }
 
@@ -711,7 +721,7 @@ void AssertiveBehaviour::waypointing()
 					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
 					if (((fabs(amclPose.pose.pose.position.x - goalDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalDoorY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
 					{
-						if(unpaused == false)
+						/*if(unpaused == false)
 						{
 							listeningForUnpause = true;
 							move_cmd.linear.x = 0.0;
@@ -719,7 +729,7 @@ void AssertiveBehaviour::waypointing()
 							cmd_vel_pub.publish(move_cmd);
 						}
 						else
-						{
+						{*/
 							listeningForUnpause = false;
 							unpaused = false;
 							//tf::Quaternion::Quaternion(startYaw,0,0);
@@ -740,7 +750,7 @@ void AssertiveBehaviour::waypointing()
 							setLights(backToNormalLights);
 							doorReached = true;
 							//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished goalDoor, now heading to goal at %f %f", goalX, goalY);
-						}
+						//}
 					}
 				}
 
@@ -814,7 +824,7 @@ void AssertiveBehaviour::waypointing()
 					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, startYaw, tf::getYaw(amclPose.pose.pose.orientation));
 					if ((fabs(amclPose.pose.pose.position.x - startDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - startDoorY) < 0.4) &&  (fabs(yawDiff) < 0.3))
 					{
-						if(unpaused == false)
+						/*if(unpaused == false)
 						{
 
 							listeningForUnpause = true;
@@ -823,7 +833,7 @@ void AssertiveBehaviour::waypointing()
 							cmd_vel_pub.publish(move_cmd);
 						}
 						else
-						{
+						{*/
 							listeningForUnpause = false;
 							unpaused = false;
 							std_msgs::Header tmpHead;
@@ -843,7 +853,7 @@ void AssertiveBehaviour::waypointing()
 							setLights(backToNormalLights);
 							doorReached = true;
 							//ROS_INFO("[ASSERTIVE_BEHAVIOUR] Finished startDoor, now heading to start at %f %f", startX, startY);
-						}
+						//}
 					}
 				}
 				else
