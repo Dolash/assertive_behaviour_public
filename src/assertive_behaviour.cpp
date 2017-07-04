@@ -55,7 +55,7 @@ privNh.param<float>("win_distance", winDistance, 0.5);
       	firstGoal = false;
 	unwinding = false;
 	emergencyPause.data = false;
-	doorReached = false;
+	doorReached = true;
         startupLights = 0;
         fightStartLights = 1;
         loseFightLights = 2;
@@ -705,9 +705,10 @@ void AssertiveBehaviour::waypointing()
 		if (amclReceived == true)
 		{
 			
-			if (returnTrip == false)
+			if (returnTrip == false && firstGoal == true)
 			{
-				if (doorReached == false && firstGoal == true)
+				//if (doorReached == false && firstGoal == true)
+				if (doorReached == false)
 				{
 					float yawDiff = tf::getYaw(amclPose.pose.pose.orientation) - goalDoorYaw;
 					if (yawDiff > 3.14159)
@@ -719,7 +720,8 @@ void AssertiveBehaviour::waypointing()
 						yawDiff += 6.2831;
 					}
 					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
-					if (((fabs(amclPose.pose.pose.position.x - goalDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalDoorY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
+					//if (((fabs(amclPose.pose.pose.position.x - goalDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalDoorY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
+					if (((fabs(amclPose.pose.pose.position.x - goalDoorX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalDoorY) < 0.4) && (fabs(yawDiff) < 0.3)))
 					{
 						/*if(unpaused == false)
 						{
@@ -767,7 +769,8 @@ void AssertiveBehaviour::waypointing()
 						yawDiff += 6.2831;
 					}
 					//ROS_INFO("[ASSERTIVE_BEHAVIOUR] yawDiff: %f, goalYaw: %f, poseYaw: %f", yawDiff, goalYaw, tf::getYaw(amclPose.pose.pose.orientation));
-					if (((fabs(amclPose.pose.pose.position.x - goalX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
+					//if (((fabs(amclPose.pose.pose.position.x - goalX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalY) < 0.4) && (fabs(yawDiff) < 0.3)) || firstGoal == false)
+					if (((fabs(amclPose.pose.pose.position.x - goalX) < 0.4 && fabs(amclPose.pose.pose.position.y - goalY) < 0.4) && (fabs(yawDiff) < 0.3)))
 					{
 						if(unpaused == false)
 						{
@@ -782,7 +785,7 @@ void AssertiveBehaviour::waypointing()
 							listeningForUnpause = false;
 							unpaused = false;
 							//tf::Quaternion::Quaternion(startYaw,0,0);
-							firstGoal = true;
+							//firstGoal = true;
 							std_msgs::Header tmpHead;
 							geometry_msgs::Pose tmpPose;
 							geometry_msgs::Point tmpPoint;
@@ -879,6 +882,7 @@ void AssertiveBehaviour::waypointing()
 						}
 						else
 						{
+							firstGoal = true;
 							listeningForUnpause = false;
 							unpaused = false;
 							std_msgs::Header tmpHead;

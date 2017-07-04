@@ -30,7 +30,7 @@
 <arg name="end_door_yaw1" default = "-1.571"/>
 
 <arg name="tolerance" default = "8"/>
-<arg name="aggression" default = "8"/>
+<arg name="aggression" default = "2"/>
 <arg name="lose_distance" default = "-0.9"/>
 <arg name="win_distance" default = "-0.3"/>
 
